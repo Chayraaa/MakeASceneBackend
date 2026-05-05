@@ -17,7 +17,10 @@ def login():
 
     token = current_app.auth_service.authenticate_local(email, password)
     if not token:
-        return {"message": "Invalid credentials."}, 401
+        return {
+            "error": "unauthorized",
+            "message": "Invalid credentials."
+        }, 401
 
     return {
         "message": "Login successful. Use token for authentication.",

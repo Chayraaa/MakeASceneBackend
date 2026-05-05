@@ -14,3 +14,5 @@ __pycache__/
 *.pyc
 .env
 /secrets.env
+/.idea/dataSources.xml
+/.idea/makeASceneBackend.iml

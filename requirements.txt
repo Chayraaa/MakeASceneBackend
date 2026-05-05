@@ -11,3 +11,6 @@ openapi-core
 requests
 authlib
 pyyaml
+pytest
+pytest-mock
+pytest-cov

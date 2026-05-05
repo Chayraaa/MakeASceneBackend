@@ -12,10 +12,9 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:postgres@db:5432/makeascene
-      - BASE_URL=http://127.0.0.1:5000
-    env_file: "secrets.env"
+    env_file:
+      - normal.env
+      - secrets.env
 
   db:
     image: postgres:18-alpine

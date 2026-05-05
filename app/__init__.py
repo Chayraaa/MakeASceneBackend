@@ -11,7 +11,8 @@ from openapi_core.validation.request.exceptions import InvalidRequestBody
 from openapi_core.validation.schemas.exceptions import InvalidSchemaValue
 from sqlalchemy import inspect
 
-from app.repositories.units_of_work.sql_unit import SqlUnitOfWork
+from app.repositories.units_of_work.deploy_unit import DeployUnitOfWork
+from app.repositories.units_of_work.test_unit import TestUnitOfWork
 from app.services.auth_service import AuthService
 from app.services.image_service import ImageService
 from app.services.password_service import PasswordService
@@ -90,14 +91,14 @@ def setup_services(app: Flask):
     # When you, e.g., want to change from a database to a file-based storage, you would need to change the unit of work,
     # not the repositories defined for the services
     # storage_unit_of_work = SqlUnitOfWork()
-    storage_unit_of_work = SqlUnitOfWork()
+    storage_unit_of_work = TestUnitOfWork() if app.config["TESTING"] else DeployUnitOfWork()
 
     app.password_service = PasswordService()
     # This is a user management service that you can give different implementations to
     # A service could also take another service as a dependency. Though make sure to prevent circular dependencies.
     app.user_service = UserService(storage_unit_of_work.user_repo)
     app.auth_service = AuthService(storage_unit_of_work.user_repo)
-    app.image_service = ImageService(storage_unit_of_work.image_storage, storage_unit_of_work.image_repo,
+    app.image_service = ImageService(storage_unit_of_work.image_storage,
                                      base_url=os.environ.get("BASE_URL", "http://127.0.0.1:5000"))
     app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo)
 
@@ -194,8 +195,11 @@ def open_api_page(app):
 
 
 # Here everything for app creation is inited.
-def create_app():
+def create_app(testing: bool = False):
     app = Flask(__name__)
+    if testing:
+        os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        app.config["TESTING"] = True
 
     setup_logging(app)
     setup_openapi(app)

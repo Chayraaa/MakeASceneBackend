@@ -1,4 +1,3 @@
-from app.repositories.interfaces.storage.image_repo_protocol import ImageRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
 from app.services.password_service import PasswordService
 

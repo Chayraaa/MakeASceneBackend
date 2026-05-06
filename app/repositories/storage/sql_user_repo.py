@@ -22,7 +22,9 @@ class SqlUserRepo:
             return None
         return User(id=db_user.id, hashed_password=db_user.password, oauth=db_user.oauth_method, email=db_user.email)
 
-    def create_user(self, password: str, email: str, oauth="local") -> bool:
+    def create_user(self,email: str, password: str, oauth="local") -> bool:
+        if self.get_user_by_email(email):
+            return False
         db_user = UserModel(password=password, oauth_method=oauth, email=email)
         self.session.add(db_user)
         self.session.commit()

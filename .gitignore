@@ -16,3 +16,4 @@ __pycache__/
 /secrets.env
 /.idea/dataSources.xml
 /.idea/makeASceneBackend.iml
+/.coverage

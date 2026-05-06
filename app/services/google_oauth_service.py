@@ -8,7 +8,8 @@ class GoogleOauthService:
 
     def authenticate_user(self, token: dict) -> str | None:
         email: str = token.get("email", "")
-
+        if email == "":
+            return None
         user = self.user_repo.get_user_by_email(email)
         if not user:
             self.user_repo.create_user(email=email, password="", oauth="google")

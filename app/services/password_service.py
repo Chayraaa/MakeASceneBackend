@@ -12,6 +12,10 @@ if not jwt_secret_key:
 class PasswordService:
 
     @staticmethod
+    def get_secret():
+        return jwt_secret_key
+
+    @staticmethod
     def hash_password(password: str) -> str:
         return password_context.hash(password)
 

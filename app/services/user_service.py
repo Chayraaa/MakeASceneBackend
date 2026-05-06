@@ -19,8 +19,6 @@ class UserService:
         return self.repo.get_user_by_email(email)
 
     def create_user(self, email: str, password: str) -> bool:
-        if self.repo.get_user_by_email(email):
-            return False
         hashed_password = PasswordService.hash_password(password)
         return self.repo.create_user(email=email, password=hashed_password)
 

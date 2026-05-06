@@ -1,4 +1,11 @@
+from pathlib import Path
+
 import pytest
+from dotenv import load_dotenv
+
+env_path = Path(__file__).resolve().parent.parent / "test.env"
+load_dotenv(env_path)
+
 from app import create_app, db
 
 @pytest.fixture

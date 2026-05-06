@@ -15,8 +15,22 @@ def app():
     with app.app_context():
         db.create_all()
         yield app
+        db.session.remove()
         db.drop_all()
 
 @pytest.fixture
 def session(app):
-    return db.session
+    with app.app_context():
+        connection = db.engine.connect()
+        transaction = connection.begin()
+
+        session = db.session
+
+        session.bind = connection
+
+        yield session
+
+        session.rollback()
+        transaction.rollback()
+        connection.close()
+        session.remove()

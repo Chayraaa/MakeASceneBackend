@@ -1,13 +1,16 @@
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
+import jwt
 import datetime
 import os
 
-import jwt
-from passlib.context import CryptContext
 
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+ph = PasswordHasher()
+
 jwt_secret_key = os.environ.get("JWT_SECRET")
 if not jwt_secret_key:
     raise ValueError("JWT_SECRET environment variable is not set")
+
 
 class PasswordService:
 
@@ -17,23 +20,27 @@ class PasswordService:
 
     @staticmethod
     def hash_password(password: str) -> str:
-        return password_context.hash(password)
+        return ph.hash(password)
 
     @staticmethod
     def verify_password(password: str, hashed_password: str) -> bool:
-        return password_context.verify(password, hashed_password)
+        try:
+            return ph.verify(hashed_password, password)
+        except VerifyMismatchError:
+            return False
 
-    # Generate a JWT token for the user
     @staticmethod
     def generate_token(user_id: int):
         payload = {
             "id": user_id,
-            "exp": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)).timestamp(),
+            "exp": (
+                datetime.datetime.now(datetime.timezone.utc)
+                + datetime.timedelta(days=1)
+            ).timestamp(),
         }
 
         return jwt.encode(payload, jwt_secret_key, algorithm="HS256")
 
-    # Checks the provided token and returns the user id if valid
     @staticmethod
     def verify_token(token: str):
         try:

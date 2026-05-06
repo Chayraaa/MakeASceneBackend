@@ -17,3 +17,4 @@ __pycache__/
 /.idea/dataSources.xml
 /.idea/makeASceneBackend.iml
 /.coverage
+/tests/.coverage

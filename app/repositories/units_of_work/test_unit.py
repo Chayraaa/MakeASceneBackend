@@ -9,6 +9,7 @@ from app.repositories.storage.sql_user_repo import SqlUserRepo
 # If you have multiple units of work that have the same use case but with different repositories as implementation,
 # they need to have the same variable names.
 class TestUnitOfWork:
+    __test__ = False
     def __init__(self):
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)
         self.image_storage: ImageStorageProtocol = InMemoryImageStorage("images")

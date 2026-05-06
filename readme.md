@@ -54,7 +54,6 @@ The project follows a **hexagonal architecture (ports & adapters)** approach to 
   /routes          -> HTTP layer (Flask controllers)
   /services        -> Business logic layer
   /domain_models   -> Core domain models
-  /ports           -> Interface definitions (protocols)
   /database_models -> Data access layer implementations
   /repositories    -> External integrations (DB, MinIO, etc.)
     /interfaces    -> protocols for repositories

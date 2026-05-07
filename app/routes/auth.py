@@ -14,17 +14,23 @@ def login():
     data = request.get_json()
     email = (data.get("email") or "").strip().replace(" ", "")
     password = (data.get("password") or "")
+    refresh_token = (data.get("refresh_token") or "")
 
-    token = current_app.auth_service.authenticate_local(email, password)
-    if not token:
+    if refresh_token != "":
+        result = current_app.auth_service.refresh_session(refresh_token)
+    else:
+        result = current_app.auth_service.authenticate_local(email=email, password=password)
+    if not result:
         return {
             "error": "unauthorized",
             "message": "Invalid credentials."
         }, 401
+    token, refresh_token = result
 
     return {
         "message": "Login successful. Use token for authentication.",
-        "token": token
+        "access_token": token,
+        "refresh_token": refresh_token
     }, 201
 
 
@@ -56,8 +62,13 @@ def google_callback():
     if not user_info:
         return {"error": "Failed to fetch user info from Google"}, 400
 
-    jwt = current_app.google_oauth_service.authenticate_user(user_info)
-    if not jwt:
+    res = current_app.google_oauth_service.authenticate_user(user_info)
+    if not res:
         return {"error": "Failed to authenticate user"}, 400
+    token, refresh_token = res
 
-    return {"message": "Login successful. Use token for authentication.", "token": jwt}, 201
+    return {
+        "message": "Login successful. Use token for authentication.",
+        "access_token": token,
+        "refresh_token": refresh_token
+    }, 201

@@ -4,77 +4,85 @@ from app.services.google_oauth_service import GoogleOauthService
 
 
 def test_valid_auth():
-    repo = MagicMock()
+    user_repo = MagicMock()
+    refresh_repo = MagicMock()
     token = {
         "email": "test@test.com"
     }
     user = MagicMock()
     user.oauth = "google"
     user.id = 123
-    repo.get_user_by_email.return_value = user
+    user_repo.get_user_by_email.return_value = user
 
-    service = GoogleOauthService(repo)
-    with patch("app.services.google_oauth_service.PasswordService.generate_token", return_value="token"):
-        jwt = service.authenticate_user(token)
+    service = GoogleOauthService(user_repo, refresh_repo)
+    with patch("app.services.google_oauth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.google_oauth_service.PasswordService.generate_refresh_token", return_value="refresh"), \
+            patch("app.services.google_oauth_service.PasswordService.hash_refresh_token", return_value="hashed_refresh") as mock_hash:
+        res = service.authenticate_user(token)
 
-    repo.update_user.assert_called_once_with(
-        user
-    )
-
-    assert jwt == "token"
+    mock_hash.assert_called_once_with("refresh")
+    refresh_repo.create.assert_called_once_with(hashed_token="hashed_refresh", user=user)
+    user_repo.update_user.assert_called_once_with(user)
+    assert res == ("token", "refresh")
 
 
 def test_non_existing_user():
-    repo = MagicMock()
+    user_repo = MagicMock()
+    refresh_repo = MagicMock()
     token = {"email": "test@test.com"}
 
     user = MagicMock()
     user.oauth = "google"
     user.id = 123
 
-    repo.get_user_by_email.side_effect = [None, user]
+    user_repo.get_user_by_email.side_effect = [None, user]
 
-    service = GoogleOauthService(repo)
+    service = GoogleOauthService(user_repo, refresh_repo)
 
-    with patch("app.services.google_oauth_service.PasswordService.generate_token", return_value="token"):
-        jwt = service.authenticate_user(token)
+    with patch("app.services.google_oauth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.google_oauth_service.PasswordService.generate_refresh_token", return_value="refresh"), \
+            patch("app.services.google_oauth_service.PasswordService.hash_refresh_token", return_value="hashed_refresh"):
+        res = service.authenticate_user(token)
 
-    repo.create_user.assert_called_once_with(
+    user_repo.create_user.assert_called_once_with(
         email="test@test.com",
         password="",
         oauth="google"
     )
-
-    repo.update_user.assert_called_once_with(user)
-
-    assert jwt == "token"
+    user_repo.update_user.assert_called_once_with(user)
+    refresh_repo.create.assert_called_once_with(hashed_token="hashed_refresh", user=user)
+    assert res == ("token", "refresh")
 
 
 def test_wrong_oauth_method():
-    repo = MagicMock()
+    user_repo = MagicMock()
+    refresh_repo = MagicMock()
     token = {"email": "test@test.com"}
 
     user = MagicMock()
     user.oauth = "local"
     user.id = 123
 
-    repo.get_user_by_email.return_value = user
+    user_repo.get_user_by_email.return_value = user
 
-    service = GoogleOauthService(repo)
-    jwt = service.authenticate_user(token)
+    service = GoogleOauthService(user_repo, refresh_repo)
+    res = service.authenticate_user(token)
 
-    assert jwt is None
+    refresh_repo.create.assert_not_called()
+    assert res is None
 
 
 def test_wrong_token_format():
-    repo = MagicMock()
+    user_repo = MagicMock()
+    refresh_repo = MagicMock()
     token = {"whatever": "test@test.com"}
 
     user = MagicMock()
     user.oauth = "google"
     user.id = 123
 
-    service = GoogleOauthService(repo)
-    jwt = service.authenticate_user(token)
+    service = GoogleOauthService(user_repo, refresh_repo)
+    res = service.authenticate_user(token)
 
-    assert jwt is None
+    refresh_repo.create.assert_not_called()
+    assert res is None

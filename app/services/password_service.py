@@ -1,9 +1,10 @@
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 import jwt
+import hashlib
 import datetime
 import os
-
+import secrets
 
 ph = PasswordHasher()
 
@@ -30,12 +31,22 @@ class PasswordService:
             return False
 
     @staticmethod
-    def generate_token(user_id: int):
+    def generate_refresh_token():
+        return secrets.token_urlsafe(64)
+
+    @staticmethod
+    def hash_refresh_token(token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
+
+
+    @staticmethod
+    def generate_access_token(user_id: int):
         payload = {
             "id": user_id,
+            "type": "access",
             "exp": (
-                datetime.datetime.now(datetime.timezone.utc)
-                + datetime.timedelta(days=1)
+                    datetime.datetime.now(datetime.timezone.utc)
+                    + datetime.timedelta(days=1)
             ).timestamp(),
         }
 
@@ -45,6 +56,8 @@ class PasswordService:
     def verify_token(token: str):
         try:
             payload = jwt.decode(token, jwt_secret_key, algorithms=["HS256"])
+            if payload.get("type") != "access":
+                return None
             return payload.get("id")
         except jwt.ExpiredSignatureError:
             return None

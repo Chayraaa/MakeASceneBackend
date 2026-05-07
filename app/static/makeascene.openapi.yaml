@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: openapi
+  title: makeascene
   description: |
     The API used for the frontend and third-party for Make A Scene
   version: 1.3.0
@@ -75,11 +75,11 @@ paths:
       security: []
   /auth/sessions:
     post:
-      summary: Login with email and password
+      summary: Login email and password/refresh token
       deprecated: false
       description: >-
-        Authenticates a user with email and password and returns a JWT token on
-        success.
+        Authenticates a user with email and password or refresh token and
+        returns a JWT token on success.
       operationId: localLogin
       tags:
         - Authentication
@@ -88,7 +88,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionRequest'
+              oneOf:
+                - type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      examples:
+                        - max.mustermann@example.com
+                    password:
+                      type: string
+                      format: password
+                      examples:
+                        - securePassword123
+                  required:
+                    - email
+                    - password
+                - type: object
+                  properties:
+                    refresh_token:
+                      type: string
+                      examples:
+                        - _sahjdoDSljjwpioSj1dfhj...
+                  required:
+                    - refresh_token
             examples:
               ValidLogin:
                 value:
@@ -115,7 +138,8 @@ paths:
                 $ref: '#/components/schemas/SessionResponse'
               example:
                 message: Login successful. Use token for authentication.
-                token: eyJhbGciOiJIUzI1NiIsI...
+                access_token: eyJhbGciOiJIUzI1NiIsI...
+                refresh_token: _sahjdoDSljjwpioSj1dfhj...
           headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -229,7 +253,8 @@ paths:
                 $ref: '#/components/schemas/SessionResponse'
               example:
                 message: Login successful. Use token for authentication.
-                token: eyJhbGciOiJIUzI1NiIsInR5...
+                access_token: eyJhbGciOiJIUzI1NiIsI...
+                refresh_token: _sahjdoDSljjwpioSj1dfhj...
           headers: {}
         '400':
           description: OAuth failure (state mismatch, missing token, or missing user info)
@@ -262,8 +287,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: ''
-      security:
-        - BearerAuth: []
+      security: []
   /health:
     get:
       summary: Health check
@@ -297,6 +321,16 @@ paths:
 webhooks: {}
 components:
   schemas:
+    SessionRequestRefreshToken:
+      type: object
+      description: Login request
+      properties:
+        refresh_token:
+          type: string
+          examples:
+            - _sahjdoDSljjwpioSj1dfhj...
+      required:
+        - refresh_token
     CreateUserRequest:
       type: object
       required:
@@ -314,9 +348,9 @@ components:
           minLength: 8
           examples:
             - securePassword123
-    SessionRequest:
+    SessionRequestEmailPass:
       type: object
-      description: Login request (currently only supports password login in this endpoint)
+      description: Login request
       required:
         - email
         - password
@@ -338,11 +372,14 @@ components:
           type: string
           examples:
             - Login successful. Use token for authentication.
-        token:
+        access_token:
           type: string
           examples:
-            - >-
-              eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U
+            - eyJhbGciOiJIUzI1NiIsI...
+        refresh_token:
+          type: string
+          examples:
+            - _sahjdoDSljjwpioSj1dfhj...
     ErrorResponse:
       type: object
       properties:

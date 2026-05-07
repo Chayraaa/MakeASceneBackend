@@ -62,8 +62,13 @@ def google_callback():
     if not user_info:
         return {"error": "Failed to fetch user info from Google"}, 400
 
-    jwt = current_app.google_oauth_service.authenticate_user(user_info)
-    if not jwt:
+    res = current_app.google_oauth_service.authenticate_user(user_info)
+    if not res:
         return {"error": "Failed to authenticate user"}, 400
+    token, refresh_token = res
 
-    return {"message": "Login successful. Use token for authentication.", "token": jwt}, 201
+    return {
+        "message": "Login successful. Use token for authentication.",
+        "access_token": token,
+        "refresh_token": refresh_token
+    }, 201

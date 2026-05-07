@@ -14,17 +14,23 @@ def login():
     data = request.get_json()
     email = (data.get("email") or "").strip().replace(" ", "")
     password = (data.get("password") or "")
+    refresh_token = (data.get("refresh_token") or "")
 
-    token = current_app.auth_service.authenticate_local(email, password)
-    if not token:
+    if refresh_token != "":
+        result = current_app.auth_service.refresh_session(refresh_token)
+    else:
+        result = current_app.auth_service.authenticate_local(email=email, password=password)
+    if not result:
         return {
             "error": "unauthorized",
             "message": "Invalid credentials."
         }, 401
+    token, refresh_token = result
 
     return {
         "message": "Login successful. Use token for authentication.",
-        "token": token
+        "access_token": token,
+        "refresh_token": refresh_token
     }, 201
 
 

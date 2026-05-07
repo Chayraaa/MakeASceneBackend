@@ -23,9 +23,11 @@ from openapi_core import OpenAPI
 
 # Add all the db database_models here
 from app.database_models.user_model import UserModel
+from app.database_models.refresh_token_model import RefreshTokenModel
 
 # Open API file path
-api_url = "/static/openapi.yaml"
+open_api_file_name = "makeascene.openapi.yaml"
+api_url = f"/static/{open_api_file_name}"
 
 
 def setup_logging(app: Flask):
@@ -37,7 +39,7 @@ def setup_logging(app: Flask):
 
 
 def setup_openapi(app: Flask):
-    yaml_path = os.path.join(app.root_path, "static", "openapi.yaml")
+    yaml_path = os.path.join(app.root_path, "static", open_api_file_name)
     with open(yaml_path, "r") as f:
         spec = yaml.safe_load(f)
 
@@ -97,10 +99,10 @@ def setup_services(app: Flask):
     # This is a user management service that you can give different implementations to
     # A service could also take another service as a dependency. Though make sure to prevent circular dependencies.
     app.user_service = UserService(storage_unit_of_work.user_repo)
-    app.auth_service = AuthService(storage_unit_of_work.user_repo)
+    app.auth_service = AuthService(storage_unit_of_work.user_repo, storage_unit_of_work.refresh_token_repo)
     app.image_service = ImageService(storage_unit_of_work.image_storage,
                                      base_url=os.environ.get("BASE_URL", "http://127.0.0.1:5000"))
-    app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo)
+    app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo, storage_unit_of_work.refresh_token_repo)
 
 
 # Add all the routes here (see health as example)

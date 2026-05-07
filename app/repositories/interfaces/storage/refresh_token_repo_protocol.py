@@ -1,0 +1,14 @@
+from typing import Protocol
+
+from app.domain_models.refresh_token import RefreshToken
+from app.domain_models.user import User
+
+
+class RefreshTokenRepoProtocol(Protocol):
+    def __init__(self, session): ...
+
+    def create(self, hashed_token: str, user: User) -> bool: ...
+
+    def get_by_token_hash(self, hashed_token: str) -> RefreshToken | None: ...
+
+    def revoke(self, refresh_token: RefreshToken) -> bool: ...

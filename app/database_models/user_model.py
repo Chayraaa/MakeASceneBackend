@@ -13,3 +13,7 @@ class UserModel(db.Model):
     password: Mapped[str] = mapped_column(nullable=False)
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     oauth_method: Mapped[str] = mapped_column(nullable=False, default="local")
+
+    refresh_tokens = relationship(
+        "RefreshTokenModel", back_populates="user", cascade="all, delete-orphan"
+    )

@@ -21,7 +21,7 @@ def test_verify_wrong_password():
 
 
 def test_generate_and_verify_token():
-    token = PasswordService.generate_token(user_id=123)
+    token = PasswordService.generate_access_token(user_id=123)
 
     user_id = PasswordService.verify_token(token)
 
@@ -45,3 +45,38 @@ def test_expired_token():
     result = PasswordService.verify_token(token)
 
     assert result is None
+
+def test_generate_refresh_token():
+    token = PasswordService.generate_refresh_token()
+
+    assert token is not None
+    assert len(token) > 0
+
+
+def test_refresh_tokens_are_unique():
+    token1 = PasswordService.generate_refresh_token()
+    token2 = PasswordService.generate_refresh_token()
+
+    assert token1 != token2
+
+
+def test_hash_refresh_token():
+    token = PasswordService.generate_refresh_token()
+
+    hashed = PasswordService.hash_refresh_token(token)
+
+    assert hashed != token
+    assert len(hashed) == 64
+
+
+def test_hash_refresh_token_is_deterministic():
+    token = PasswordService.generate_refresh_token()
+
+    assert PasswordService.hash_refresh_token(token) == PasswordService.hash_refresh_token(token)
+
+
+def test_hash_refresh_token_different_tokens():
+    token1 = PasswordService.generate_refresh_token()
+    token2 = PasswordService.generate_refresh_token()
+
+    assert PasswordService.hash_refresh_token(token1) != PasswordService.hash_refresh_token(token2)

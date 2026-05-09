@@ -47,3 +47,10 @@ def test_update_user():
     service.update_user(user)
 
     repo.update_user.assert_called_once_with(user)
+
+def test_create_user_existing_email():
+    repo = MagicMock()
+    repo.get_user_by_email.return_value = MagicMock()
+    email_repo = MagicMock()
+    service = UserService(repo, email_repo)
+    assert not service.create_user(email="test@test.com", password="pw")

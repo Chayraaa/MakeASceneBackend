@@ -20,7 +20,7 @@ class SqlUserRepo:
         db_user = self.session.query(UserModel).filter_by(email=email).first()
         if not db_user:
             return None
-        return User(id=db_user.id, hashed_password=db_user.password, oauth=db_user.oauth_method, email=db_user.email)
+        return User(id=db_user.id, hashed_password=db_user.password, oauth=db_user.oauth_method, email=db_user.email, confirmed=db_user.confirmed)
 
     def create_user(self, email: str, password: str, oauth="local") -> bool:
         if self.get_user_by_email(email):

@@ -16,7 +16,7 @@ class AuthService:
 
     def authenticate_local(self, email: str, password: str) -> tuple[str, str] | None:
         user = self.repo.get_user_by_email(email)
-        if not user or user.oauth != "local":
+        if not user or user.oauth != "local" or not user.confirmed:
             return None
         if not PasswordService.verify_password(password, user.hashed_password):
             return None

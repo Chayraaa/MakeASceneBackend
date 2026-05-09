@@ -35,7 +35,15 @@ class PasswordService:
         return secrets.token_urlsafe(64)
 
     @staticmethod
+    def generate_confirm_token():
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
     def hash_refresh_token(token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    @staticmethod
+    def hash_confirm_token(token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
 
 

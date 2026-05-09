@@ -14,3 +14,4 @@ pytest-mock
 pytest-cov
 python-dotenv
 argon2-cffi
+resend

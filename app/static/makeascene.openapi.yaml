@@ -73,6 +73,39 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
+  /auth/confirm-email:
+    get:
+      summary: Confirm Email
+      deprecated: false
+      description: Used to confirm an account for creation via a sent email
+      operationId: confirmPassword
+      tags: []
+      parameters:
+        - name: token
+          in: query
+          description: ''
+          required: true
+          example: _sahjdoDSljjwpioSj1df...
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailConfirmed'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
   /auth/sessions:
     post:
       summary: Login email and password/refresh token
@@ -331,6 +364,15 @@ components:
             - _sahjdoDSljjwpioSj1dfhj...
       required:
         - refresh_token
+    EmailConfirmed:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - Email confirmed.
+      required:
+        - message
     CreateUserRequest:
       type: object
       required:

@@ -7,3 +7,4 @@ class User:
     hashed_password: str
     oauth: str = "local"
     email: str = ""
+    confirmed: bool = False

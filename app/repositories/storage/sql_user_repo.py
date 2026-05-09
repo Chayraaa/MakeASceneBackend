@@ -35,5 +35,6 @@ class SqlUserRepo:
         db_user.password = user.hashed_password
         db_user.oauth_method = user.oauth
         db_user.email = user.email
+        db_user.confirmed = user.confirmed
         self.session.commit()
         return True

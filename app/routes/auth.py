@@ -72,3 +72,13 @@ def google_callback():
         "access_token": token,
         "refresh_token": refresh_token
     }, 201
+
+
+@auth.route("/confirm-email", methods=["GET"])
+@validate
+def confirm_password():
+    params = request.args
+    token = params.get("token")
+    if current_app.auth_service.confirm_email(token):
+        return {"message": "Email confirmed."}, 200
+    return {"error": "unauthorized", "message": "Invalid credentials."}, 401

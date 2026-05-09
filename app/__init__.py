@@ -98,11 +98,14 @@ def setup_services(app: Flask):
     app.password_service = PasswordService()
     # This is a user management service that you can give different implementations to
     # A service could also take another service as a dependency. Though make sure to prevent circular dependencies.
-    app.user_service = UserService(storage_unit_of_work.user_repo, storage_unit_of_work.email_repo)
-    app.auth_service = AuthService(storage_unit_of_work.user_repo, storage_unit_of_work.refresh_token_repo)
+    app.user_service = UserService(storage_unit_of_work.user_repo, storage_unit_of_work.email_repo,
+                                   storage_unit_of_work.confirm_token_repo)
+    app.auth_service = AuthService(storage_unit_of_work.user_repo, storage_unit_of_work.refresh_token_repo,
+                                   storage_unit_of_work.confirm_token_repo)
     app.image_service = ImageService(storage_unit_of_work.image_storage,
                                      base_url=os.environ.get("BASE_URL", "http://127.0.0.1:5000"))
-    app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo, storage_unit_of_work.refresh_token_repo)
+    app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo,
+                                                  storage_unit_of_work.refresh_token_repo)
 
 
 # Add all the routes here (see health as example)

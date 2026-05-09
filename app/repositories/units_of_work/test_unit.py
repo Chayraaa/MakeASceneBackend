@@ -1,10 +1,12 @@
 from app.extensions import db
 from app.repositories.external.resend_email_repo import ResendEmailRepo
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
+from app.repositories.interfaces.storage.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
 from app.repositories.interfaces.storage.image_storage_protocol import ImageStorageProtocol
 from app.repositories.interfaces.storage.refresh_token_repo_protocol import RefreshTokenRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
 from app.repositories.storage.mem_image_storage import InMemoryImageStorage
+from app.repositories.storage.sql_confirm_token_repo import SqlConfirmTokenRepo
 from app.repositories.storage.sql_refresh_token_repo import SqlRefreshTokenRepo
 from app.repositories.storage.sql_user_repo import SqlUserRepo
 
@@ -18,4 +20,5 @@ class TestUnitOfWork:
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)
         self.image_storage: ImageStorageProtocol = InMemoryImageStorage("images")
         self.refresh_token_repo: RefreshTokenRepoProtocol = SqlRefreshTokenRepo(db.session)
-        self.email_repo: EmailProtocol = ResendEmailRepo() # Another one should be used
+        self.email_repo: EmailProtocol = ResendEmailRepo()
+        self.confirm_token_repo: ConfirmTokenRepoProtocol = SqlConfirmTokenRepo(db.session)

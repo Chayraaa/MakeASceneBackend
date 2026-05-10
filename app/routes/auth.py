@@ -82,3 +82,12 @@ def confirm_password():
     if current_app.auth_service.confirm_email(token):
         return {"message": "Email confirmed."}, 200
     return {"error": "unauthorized", "message": "Invalid credentials."}, 401
+
+
+@auth.route("/resend-email", methods=["GET"])
+@validate
+def resend_mail():
+    params = request.args
+    email = params.get("email")
+    current_app.user_service.resend_confirmation_email(email)
+    return {"message": "Email sent if an unconfirmed user with that email exists."}, 200

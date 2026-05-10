@@ -121,5 +121,20 @@ class UserService:
         )
         return True
 
+    def resend_confirmation_email(self, email: str) -> bool:
+        user = self.get_user_by_email(email)
+        if not user or user.confirmed:
+            return False
+        token = PasswordService.generate_confirm_token()
+        hashed_token = PasswordService.hash_confirm_token(token)
+        self.confirm_repo.create(hashed_token=hashed_token, user=user)
+        email_text = _assemble_mail(token)
+        self.email_repo_protocol.send_email(
+            subject="Welcome to Make A Scene! Confirm your email to get started.",
+            recipient=email,
+            body=email_text,
+        )
+        return True
+
     def update_user(self, user: User) -> bool:
         return self.user_repo.update_user(user)

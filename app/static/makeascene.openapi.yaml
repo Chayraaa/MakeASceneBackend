@@ -106,6 +106,38 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
+  /auth/resend-email:
+    get:
+      summary: Resend Email
+      deprecated: false
+      description: Used to request a resend of the confirmation email
+      operationId: resendEmail
+      tags: []
+      parameters:
+        - name: email
+          in: query
+          description: ''
+          required: true
+          example: test@test.com
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailSent'
+              example:
+                message: Email sent if an unconfirmed user with that email exists.
+          headers: {}
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
   /auth/sessions:
     post:
       summary: Login email and password/refresh token
@@ -371,6 +403,15 @@ components:
           type: string
           examples:
             - Email confirmed.
+      required:
+        - message
+    EmailSent:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - Email sent if an unconfirmed user with that email exists.
       required:
         - message
     CreateUserRequest:

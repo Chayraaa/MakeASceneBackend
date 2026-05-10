@@ -132,3 +132,110 @@ def test_create_user_fails_if_user_not_found_after_create():
     assert result is False
     email_repo.send_email.assert_not_called()
     confirm_repo.create.assert_not_called()
+
+def test_resend_confirmation_email_returns_false_if_user_not_found():
+    repo = MagicMock()
+    repo.get_user_by_email.return_value = None
+    email_repo = MagicMock()
+    confirm_repo = MagicMock()
+    service = UserService(repo, email_repo, confirm_repo)
+
+    result = service.resend_confirmation_email("test@test.com")
+
+    assert result is False
+    email_repo.send_email.assert_not_called()
+    confirm_repo.create.assert_not_called()
+
+
+def test_resend_confirmation_email_returns_false_if_already_confirmed():
+    repo = MagicMock()
+    user = MagicMock()
+    user.confirmed = True
+    repo.get_user_by_email.return_value = user
+    email_repo = MagicMock()
+    confirm_repo = MagicMock()
+    service = UserService(repo, email_repo, confirm_repo)
+
+    result = service.resend_confirmation_email("test@test.com")
+
+    assert result is False
+    email_repo.send_email.assert_not_called()
+    confirm_repo.create.assert_not_called()
+
+
+def test_resend_confirmation_email_stores_hashed_token_in_confirm_repo():
+    repo = MagicMock()
+    user = MagicMock()
+    user.confirmed = False
+    repo.get_user_by_email.return_value = user
+    confirm_repo = MagicMock()
+    service = UserService(repo, MagicMock(), confirm_repo)
+
+    plain_token = "plain-token"
+    hashed_token = "hashed-token"
+
+    with (
+        patch("app.services.user_service.PasswordService.generate_confirm_token", return_value=plain_token),
+        patch("app.services.user_service.PasswordService.hash_confirm_token", return_value=hashed_token),
+    ):
+        service.resend_confirmation_email("test@test.com")
+
+    confirm_repo.create.assert_called_once_with(hashed_token=hashed_token, user=user)
+
+
+def test_resend_confirmation_email_sends_email_with_correct_recipient_and_subject():
+    repo = MagicMock()
+    user = MagicMock()
+    user.confirmed = False
+    repo.get_user_by_email.return_value = user
+    email_repo = MagicMock()
+    service = UserService(repo, email_repo, MagicMock())
+
+    with (
+        patch("app.services.user_service.PasswordService.generate_confirm_token", return_value="t"),
+        patch("app.services.user_service.PasswordService.hash_confirm_token", return_value="h"),
+    ):
+        service.resend_confirmation_email("test@test.com")
+
+    email_repo.send_email.assert_called_once()
+    _, kwargs = email_repo.send_email.call_args
+    assert kwargs["recipient"] == "test@test.com"
+    assert "confirm" in kwargs["subject"].lower() or "welcome" in kwargs["subject"].lower()
+
+
+def test_resend_confirmation_email_body_contains_plain_token():
+    repo = MagicMock()
+    user = MagicMock()
+    user.confirmed = False
+    repo.get_user_by_email.return_value = user
+    email_repo = MagicMock()
+    service = UserService(repo, email_repo, MagicMock())
+
+    plain_token = "plain-secret-token"
+    hashed_token = "hashed-secret-token"
+
+    with (
+        patch("app.services.user_service.PasswordService.generate_confirm_token", return_value=plain_token),
+        patch("app.services.user_service.PasswordService.hash_confirm_token", return_value=hashed_token),
+    ):
+        service.resend_confirmation_email("test@test.com")
+
+    _, kwargs = email_repo.send_email.call_args
+    assert plain_token in kwargs["body"]
+    assert hashed_token not in kwargs["body"]
+
+
+def test_resend_confirmation_email_returns_true_on_success():
+    repo = MagicMock()
+    user = MagicMock()
+    user.confirmed = False
+    repo.get_user_by_email.return_value = user
+    service = UserService(repo, MagicMock(), MagicMock())
+
+    with (
+        patch("app.services.user_service.PasswordService.generate_confirm_token", return_value="t"),
+        patch("app.services.user_service.PasswordService.hash_confirm_token", return_value="h"),
+    ):
+        result = service.resend_confirmation_email("test@test.com")
+
+    assert result is True

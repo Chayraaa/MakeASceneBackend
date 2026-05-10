@@ -24,6 +24,7 @@ from openapi_core import OpenAPI
 # Add all the db database_models here
 from app.database_models.user_model import UserModel
 from app.database_models.refresh_token_model import RefreshTokenModel
+from app.database_models.confirm_token_model import ConfirmTokenModel
 
 # Open API file path
 open_api_file_name = "makeascene.openapi.yaml"

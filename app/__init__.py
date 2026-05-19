@@ -4,12 +4,12 @@ from functools import wraps
 
 import yaml
 from authlib.integrations.flask_client import OAuth
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify, current_app
 from openapi_core.contrib.flask import FlaskOpenAPIRequest
 from openapi_core.exceptions import OpenAPIError
 from openapi_core.validation.request.exceptions import InvalidRequestBody
 from openapi_core.validation.schemas.exceptions import InvalidSchemaValue
-from sqlalchemy import inspect
 
 from app.repositories.units_of_work.deploy_unit import DeployUnitOfWork
 from app.repositories.units_of_work.test_unit import TestUnitOfWork
@@ -18,7 +18,7 @@ from app.services.image_service import ImageService
 from app.services.password_service import PasswordService
 from app.services.google_oauth_service import GoogleOauthService
 from app.services.user_service import UserService
-from app.extensions import db
+from app.extensions import db, migrate
 from openapi_core import OpenAPI
 
 # Add all the db database_models here
@@ -71,18 +71,7 @@ def setup_database(app: Flask):
 
     app.logger.info(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     db.init_app(app)
-
-    with app.app_context():
-        inspector = inspect(db.engine)
-        for table_name, table_obj in db.metadata.tables.items():
-            if not inspector.has_table(table_name):
-                try:
-                    table_obj.create(db.engine)
-                    app.logger.info(f"Created table: {table_name}")
-                except Exception as e:
-                    app.logger.error(f"Error creating table {table_name} with error {e}")
-            else:
-                app.logger.info(f"Table {table_name} already exists")
+    migrate.init_app(app, db)
 
 
 ########################
@@ -205,6 +194,10 @@ def open_api_page(app):
 # Here everything for app creation is inited.
 def create_app(testing: bool = False):
     app = Flask(__name__)
+    load_dotenv("normal.env")
+    load_dotenv("secrets.env")
+    if os.getenv("FLASK_ENV") == "migration":
+        os.environ["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost:5432/makeascene"
     if testing:
         os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
         app.config["TESTING"] = True

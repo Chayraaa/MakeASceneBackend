@@ -6,8 +6,13 @@ def test_bucket_created_if_not_exists():
     mock_client = MagicMock()
     mock_client.bucket_exists.return_value = False
 
-    with patch("app.repositories.storage.minio_image_storage.Minio", return_value=mock_client):
+    with patch(
+        "app.repositories.storage.minio_image_storage.Minio",
+        return_value=mock_client
+    ):
         storage = MinioImageStorage(bucket="test-bucket")
+
+        storage._ensure_bucket()
 
         mock_client.bucket_exists.assert_called_once_with("test-bucket")
         mock_client.make_bucket.assert_called_once_with("test-bucket")

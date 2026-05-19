@@ -15,3 +15,5 @@ pytest-cov
 python-dotenv
 argon2-cffi
 resend
+flask-migrate
+python-dotenv

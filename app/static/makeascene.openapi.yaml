@@ -6,10 +6,312 @@ info:
   version: 1.3.0
 tags:
   - name: Users
+  - name: Tags
+  - name: Message
   - name: Authentication
   - name: OAuth
   - name: Health
+  - name: Search
+  - name: Site Account
 paths:
+  /users/me/tags/{tag_id}:
+    delete:
+      summary: Remove tag
+      deprecated: false
+      description: Remove a tag if it exists.
+      operationId: deleteTag
+      tags:
+        - Users
+        - Tags
+      parameters:
+        - name: tag_id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/tags:
+    post:
+      summary: Save tag
+      deprecated: false
+      description: Saves a tag if it exists.
+      operationId: saveTag
+      tags:
+        - Users
+        - Tags
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagSaveRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    get:
+      summary: Get tags
+      deprecated: false
+      description: Get the tags you saved.
+      operationId: getTags
+      tags:
+        - Users
+        - Tags
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagQueryResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/tags/block/{tag_id}:
+    post:
+      summary: Block tag
+      deprecated: false
+      description: Blocks a tag if it exists.
+      operationId: blockTag
+      tags:
+        - Users
+        - Tags
+      parameters:
+        - name: tag_id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Unblock Tag
+      deprecated: false
+      description: Unblocks a tag if it exists and is blocked.
+      operationId: unblockTag
+      tags:
+        - Users
+        - Tags
+      parameters:
+        - name: tag_id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me:
+    get:
+      summary: Get info about yourself
+      deprecated: false
+      description: Retrieve info about yourself
+      operationId: getInfo
+      tags:
+        - Users
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    patch:
+      summary: Change info about yourself
+      deprecated: false
+      description: Change info about yourself
+      operationId: changeInfo
+      tags:
+        - Users
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchUserRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Delete yourself
+      deprecated: false
+      description: Deletes your account
+      operationId: deleteUser
+      tags:
+        - Users
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteUserResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/messages:
+    get:
+      summary: Messages
+      deprecated: false
+      description: Retrieval of the messages for a user.
+      operationId: userMessages
+      tags:
+        - Users
+        - Message
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
   /users:
     post:
       summary: Create user
@@ -180,7 +482,8 @@ paths:
       deprecated: false
       description: Logs a user out. Meaning it invalidates the refresh tokens
       operationId: logout
-      tags: []
+      tags:
+        - Authentication
       parameters: []
       responses:
         '200':
@@ -217,7 +520,8 @@ paths:
       summary: Request Password Reset
       deprecated: false
       description: Used to request a password change with an email.
-      tags: []
+      tags:
+        - Authentication
       parameters: []
       requestBody:
         content:
@@ -325,7 +629,9 @@ paths:
       deprecated: false
       description: 'Gets the refresh and access tokens for a user that logs in with oauth. '
       operationId: exchangeOauth
-      tags: []
+      tags:
+        - OAuth
+        - Authentication
       parameters: []
       requestBody:
         content:
@@ -517,19 +823,187 @@ paths:
           description: ''
       security:
         - BearerAuth: []
+  /tags:
+    get:
+      summary: Search for a tag
+      deprecated: false
+      description: ''
+      tags:
+        - Tags
+        - Search
+      parameters:
+        - name: query
+          in: query
+          description: ''
+          required: false
+          example: test tag
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagQueryResponse'
+          headers: {}
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /site-accounts:
+    post:
+      summary: Create site account
+      deprecated: false
+      description: Creates a site account
+      operationId: siteAccountCreation
+      tags:
+        - Site Account
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSiteAccount'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccountResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /site-accounts/{id}:
+    get:
+      summary: Get site account info
+      deprecated: false
+      description: Returns the info of a site account.
+      operationId: getSiteAccount
+      tags:
+        - Site Account
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccount'
+          headers: {}
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+    patch:
+      summary: Change site account info
+      deprecated: false
+      description: Changes the site account info
+      operationId: changeSiteAccount
+      tags:
+        - Site Account
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteAccountChangeRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccountResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Delete site account
+      deprecated: false
+      description: Deletes a site account.
+      operationId: deleteSiteAccount
+      tags:
+        - Site Account
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccountResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
 webhooks: {}
 components:
   schemas:
-    SessionRequestRefreshToken:
-      type: object
-      description: Login request
-      properties:
-        refresh_token:
-          type: string
-          examples:
-            - _sahjdoDSljjwpioSj1dfhj...
-      required:
-        - refresh_token
     EmailConfirmed:
       type: object
       properties:
@@ -548,6 +1022,16 @@ components:
             - Email sent if an unconfirmed user with that email exists.
       required:
         - message
+    EmailResendRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          examples:
+            - test@test.com
+      required:
+        - email
     ChangePasswordRequest:
       type: object
       properties:
@@ -573,18 +1057,7 @@ components:
             - Password was changed
       required:
         - message
-    ExchangeTokenResponse:
-      type: object
-      properties:
-        exchange:
-          type: string
-          examples:
-            - sod2_02Jdj...
-          description: |
-            The token returned to retrieve the actual login data
-      required:
-        - exchange
-    EmailResendRequest:
+    UserInfoResponse:
       type: object
       properties:
         email:
@@ -592,17 +1065,48 @@ components:
           format: email
           examples:
             - test@test.com
+        mature:
+          type: boolean
+          default: true
+        email-preference:
+          type: boolean
+          default: true
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              sender:
+                type: string
+                examples:
+                  - test event
+              message:
+                type: string
+                examples:
+                  - test message
+            required:
+              - sender
+              - message
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          description: tag
       required:
+        - mature
+        - email-preference
         - email
-    LogoutResponse:
+        - messages
+        - tags
+    PatchUserRequest:
       type: object
       properties:
-        message:
-          type: string
-          examples:
-            - All refresh tokens were invalidated.
-      required:
-        - message
+        mature:
+          type: boolean
+          default: true
+        email-preference:
+          type: boolean
+          default: true
     CreateUserRequest:
       type: object
       required:
@@ -620,6 +1124,66 @@ components:
           minLength: 8
           examples:
             - securePassword123
+    DeleteUserResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - Deletion was successful.
+      required:
+        - message
+    MessageResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              sender:
+                type: string
+                examples:
+                  - test event
+              message:
+                type: string
+                examples:
+                  - test message
+            required:
+              - sender
+              - message
+      required:
+        - messages
+    SessionRequestRefreshToken:
+      type: object
+      description: Login request
+      properties:
+        refresh_token:
+          type: string
+          examples:
+            - _sahjdoDSljjwpioSj1dfhj...
+      required:
+        - refresh_token
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - All refresh tokens were invalidated.
+      required:
+        - message
+    ExchangeTokenResponse:
+      type: object
+      properties:
+        exchange:
+          type: string
+          examples:
+            - sod2_02Jdj...
+          description: |
+            The token returned to retrieve the actual login data
+      required:
+        - exchange
     SessionRequestEmailPass:
       type: object
       description: Login request
@@ -663,6 +1227,95 @@ components:
           type: string
           examples:
             - A human-readable description of the error.
+    TagQueryResponse:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          description: tag
+      required:
+        - tags
+    TagResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - Tag saved.
+      required:
+        - message
+    TagSaveRequest:
+      type: object
+      properties:
+        tag_id:
+          type: integer
+      required:
+        - tag_id
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID
+        name:
+          type: string
+          description: name
+          examples:
+            - test tag
+      required:
+        - id
+        - name
+    SiteAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID
+        name:
+          type: string
+          description: name
+          examples:
+            - Test Organizer
+        creator_id:
+          type: integer
+      required:
+        - id
+        - name
+        - creator_id
+    CreateSiteAccount:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name
+          examples:
+            - Test Organizer
+        creator_id:
+          type: integer
+      required:
+        - name
+        - creator_id
+    SiteAccountResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - Account created.
+      required:
+        - message
+    SiteAccountChangeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name
+          examples:
+            - Test Organizer
+      required:
+        - name
   responses:
     Unauthorized:
       description: Authentication failed
@@ -725,6 +1378,25 @@ components:
             Example 1:
               summary: Example 1
               value: {}
+    NotFound:
+      description: ''
+      content:
+        application/json:
+          schema:
+            title: ''
+            type: object
+            properties:
+              error:
+                type: string
+                examples:
+                  - Not found
+              message:
+                type: string
+                examples:
+                  - Tag was not found.
+            required:
+              - error
+              - message
   securitySchemes:
     BearerAuth:
       type: http

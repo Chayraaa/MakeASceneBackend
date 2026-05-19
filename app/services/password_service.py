@@ -1,3 +1,5 @@
+from cmath import exp
+
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 import jwt
@@ -39,6 +41,10 @@ class PasswordService:
         return secrets.token_urlsafe(32)
 
     @staticmethod
+    def generate_reset_token():
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
     def hash_refresh_token(token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
 
@@ -46,6 +52,9 @@ class PasswordService:
     def hash_confirm_token(token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
 
+    @staticmethod
+    def hash_reset_token(token: str) -> str:
+        return hashlib.sha256(token.encode()).hexdigest()
 
     @staticmethod
     def generate_access_token(user_id: int):
@@ -67,6 +76,30 @@ class PasswordService:
             if payload.get("type") != "access":
                 return None
             return payload.get("id")
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.InvalidTokenError:
+            return None
+
+    @staticmethod
+    def generate_exchange_token(email: str):
+        payload = {
+            "email": email,
+            "type": "exchange",
+            "exp": (
+                    datetime.datetime.now(datetime.timezone.utc)
+                    + datetime.timedelta(minutes=1)
+            ).timestamp()
+        }
+        return jwt.encode(payload, jwt_secret_key, algorithm="HS256")
+
+    @staticmethod
+    def verify_exchange_token(token: str):
+        try:
+            payload = jwt.decode(token, jwt_secret_key, algorithms=["HS256"])
+            if payload.get("type") != "exchange":
+                return None
+            return payload.get("email")
         except jwt.ExpiredSignatureError:
             return None
         except jwt.InvalidTokenError:

@@ -108,21 +108,21 @@ paths:
           description: ''
       security: []
   /auth/email/resend:
-    get:
+    post:
       summary: Resend Email
       deprecated: false
       description: Used to request a resend of the confirmation email
       operationId: resendEmail
       tags:
         - Authentication
-      parameters:
-        - name: email
-          in: query
-          description: ''
-          required: true
-          example: test@test.com
-          schema:
-            type: string
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailResendRequest'
+            examples: {}
+        required: true
       responses:
         '200':
           description: ''
@@ -140,11 +140,12 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
-  /auth/password/confirm:
+  /auth/password/reset:
     post:
       summary: Change Password
       deprecated: false
       description: Used when the password should be changed or was forgotten
+      operationId: changePassword
       tags:
         - Authentication
       parameters: []
@@ -166,6 +167,73 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /auth/logout:
+    post:
+      summary: Logout
+      deprecated: false
+      description: Logs a user out. Meaning it invalidates the refresh tokens
+      operationId: logout
+      tags: []
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+              example: >
+                <!doctype html>
+
+                <html lang=en>
+
+                <title>404 Not Found</title>
+
+                <h1>Not Found</h1>
+
+                <p>The requested URL was not found on the server. If you entered
+                the URL manually please check your spelling and try again.</p>
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /auth/password/request-reset:
+    post:
+      summary: Request Password Reset
+      deprecated: false
+      description: Used to request a password change with an email.
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailResendRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailSent'
+          headers: {}
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
           description: Validation error – one or more fields failed validation
@@ -240,6 +308,39 @@ paths:
                 message: Login successful. Use token for authentication.
                 access_token: eyJhbGciOiJIUzI1NiIsI...
                 refresh_token: _sahjdoDSljjwpioSj1dfhj...
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /auth/oauth/exchange:
+    post:
+      summary: Exchange login info for oauth users
+      deprecated: false
+      description: 'Gets the refresh and access tokens for a user that logs in with oauth. '
+      operationId: exchangeOauth
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeTokenResponse'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
           headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -350,11 +451,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionResponse'
+                $ref: '#/components/schemas/ExchangeTokenResponse'
               example:
-                message: Login successful. Use token for authentication.
-                access_token: eyJhbGciOiJIUzI1NiIsI...
-                refresh_token: _sahjdoDSljjwpioSj1dfhj...
+                exchange: eyJhbGciOiJIUzI1NiIsI...
           headers: {}
         '400':
           description: OAuth failure (state mismatch, missing token, or missing user info)
@@ -472,6 +571,36 @@ components:
           type: string
           examples:
             - Password was changed
+      required:
+        - message
+    ExchangeTokenResponse:
+      type: object
+      properties:
+        exchange:
+          type: string
+          examples:
+            - sod2_02Jdj...
+          description: |
+            The token returned to retrieve the actual login data
+      required:
+        - exchange
+    EmailResendRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          examples:
+            - test@test.com
+      required:
+        - email
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - All refresh tokens were invalidated.
       required:
         - message
     CreateUserRequest:

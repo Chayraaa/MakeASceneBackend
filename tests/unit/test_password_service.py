@@ -80,3 +80,56 @@ def test_hash_refresh_token_different_tokens():
     token2 = PasswordService.generate_refresh_token()
 
     assert PasswordService.hash_refresh_token(token1) != PasswordService.hash_refresh_token(token2)
+
+def test_generate_and_verify_exchange_token():
+    token = PasswordService.generate_exchange_token("test@test.com")
+
+    email = PasswordService.verify_exchange_token(token)
+
+    assert email == "test@test.com"
+
+
+def test_verify_exchange_token_wrong_type():
+    payload = {
+        "email": "test@test.com",
+        "type": "access",
+        "exp": (
+            datetime.now(timezone.utc) + timedelta(minutes=1)
+        ).timestamp()
+    }
+
+    token = jwt.encode(
+        payload,
+        PasswordService.get_secret(),
+        algorithm="HS256"
+    )
+
+    result = PasswordService.verify_exchange_token(token)
+
+    assert result is None
+
+
+def test_verify_exchange_token_invalid():
+    result = PasswordService.verify_exchange_token("invalid.token")
+
+    assert result is None
+
+
+def test_verify_exchange_token_expired():
+    payload = {
+        "email": "test@test.com",
+        "type": "exchange",
+        "exp": (
+            datetime.now(timezone.utc) - timedelta(seconds=1)
+        ).timestamp()
+    }
+
+    token = jwt.encode(
+        payload,
+        PasswordService.get_secret(),
+        algorithm="HS256"
+    )
+
+    result = PasswordService.verify_exchange_token(token)
+
+    assert result is None

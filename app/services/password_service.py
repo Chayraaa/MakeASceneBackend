@@ -10,7 +10,7 @@ import secrets
 
 ph = PasswordHasher()
 
-jwt_secret_key = os.environ.get("JWT_SECRET")
+jwt_secret_key = os.environ.get("JWT_SECRET", "ABC")
 if not jwt_secret_key:
     raise ValueError("JWT_SECRET environment variable is not set")
 

@@ -2,14 +2,15 @@
 
 ## User Management
 
-* Registration / Login (Email & Password, OAuth)
-* Role system: User, Moderator, Admin
-* Age flag (over/under 18)
-* Password reset
-* Email confirmation
-* Self-deletion
-* Email preferences (opt-in/out)
-* Store messages sent to the user
+-[x] Registration / Login (Email & Password, OAuth)
+-[ ] Role system: User, Moderator, Admin
+-[ ] Age flag (over/under 18)
+-[x] Password reset
+-[x] Email confirmation
+-[ ] Self-deletion
+-[ ] Email preferences (opt-in/out)
+-[ ] Store messages sent to the user
+-[ ] Retrieve info about yourself
 
 ### User Tag Selection
 
@@ -23,14 +24,14 @@
 
 * “For You” feed based on:
 
-  * User tags
-  * Filters (datetime, location, include/exclude tags)
+    * User tags
+    * Filters (datetime, location, include/exclude tags)
 * Feed for newest events nearby (with filters)
 * “Get Involved” feed:
 
-  * Events in planning
-  * Based on nearby activity
-  * With filters
+    * Events in planning
+    * Based on nearby activity
+    * With filters
 
 ## Verification
 
@@ -49,18 +50,18 @@
 * Moderation team can assign/change admin of a site account
 * Moderation team can delete:
 
-  * Users
-  * Events
-  * Site accounts
+    * Users
+    * Events
+    * Site accounts
 
 ### Flow
 
 * Moderation decision (approve/deny)
 * If approved:
 
-  * Send email notification
-  * Create a site account
-  * Grant access to user
+    * Send email notification
+    * Create a site account
+    * Grant access to user
 
 ## Site Account Management
 
@@ -83,16 +84,16 @@
 * Template support (images, text, etc.)
 * Conflict check:
 
-  * Ensure no overlapping events at the same time /place for a site account
+    * Ensure no overlapping events at the same time /place for a site account
 * Collaboration:
 
-  * Can include multiple site accounts
-  * If not default collaborators → send a collaboration request
+    * Can include multiple site accounts
+    * If not default collaborators → send a collaboration request
 * Calendar event generation (e.g. ICS)
 * Notifications:
 
-  * Updates / changes
-  * Messages to subscribers
+    * Updates / changes
+    * Messages to subscribers
 
 ## Filter
 

@@ -74,7 +74,7 @@ def google_callback():
     }, 201
 
 
-@auth.route("/confirm-email", methods=["GET"])
+@auth.route("/email/confirm", methods=["GET"])
 @validate
 def confirm_password():
     params = request.args
@@ -84,7 +84,7 @@ def confirm_password():
     return {"error": "unauthorized", "message": "Invalid credentials."}, 401
 
 
-@auth.route("/resend-email", methods=["GET"])
+@auth.route("/email/resend", methods=["GET"])
 @validate
 def resend_mail():
     params = request.args

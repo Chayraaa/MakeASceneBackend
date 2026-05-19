@@ -108,21 +108,21 @@ paths:
           description: ''
       security: []
   /auth/email/resend:
-    get:
+    post:
       summary: Resend Email
       deprecated: false
       description: Used to request a resend of the confirmation email
       operationId: resendEmail
       tags:
         - Authentication
-      parameters:
-        - name: email
-          in: query
-          description: ''
-          required: true
-          example: test@test.com
-          schema:
-            type: string
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailResendRequest'
+            examples: {}
+        required: true
       responses:
         '200':
           description: ''
@@ -145,6 +145,7 @@ paths:
       summary: Change Password
       deprecated: false
       description: Used when the password should be changed or was forgotten
+      operationId: changePassword
       tags:
         - Authentication
       parameters: []
@@ -240,6 +241,39 @@ paths:
                 message: Login successful. Use token for authentication.
                 access_token: eyJhbGciOiJIUzI1NiIsI...
                 refresh_token: _sahjdoDSljjwpioSj1dfhj...
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /auth/oauth/exchange:
+    post:
+      summary: Exchange login info for oauth users
+      deprecated: false
+      description: 'Gets the refresh and access tokens for a user that logs in with oauth. '
+      operationId: exchangeOauth
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeTokenResponse'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
           headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -350,11 +384,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionResponse'
+                $ref: '#/components/schemas/ExchangeTokenResponse'
               example:
-                message: Login successful. Use token for authentication.
-                access_token: eyJhbGciOiJIUzI1NiIsI...
-                refresh_token: _sahjdoDSljjwpioSj1dfhj...
+                exchange: eyJhbGciOiJIUzI1NiIsI...
           headers: {}
         '400':
           description: OAuth failure (state mismatch, missing token, or missing user info)
@@ -474,6 +506,27 @@ components:
             - Password was changed
       required:
         - message
+    ExchangeTokenResponse:
+      type: object
+      properties:
+        exchange:
+          type: string
+          examples:
+            - sod2_02Jdj...
+          description: |
+            The token returned to retrieve the actual login data
+      required:
+        - exchange
+    EmailResendRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          examples:
+            - test@test.com
+      required:
+        - email
     CreateUserRequest:
       type: object
       required:

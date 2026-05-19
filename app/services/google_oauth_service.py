@@ -21,6 +21,16 @@ class GoogleOauthService:
             return None
         self.user_repo.update_user(user)
 
+        return PasswordService.generate_exchange_token(user.email)
+
+    def exchange(self, exchange_token: str):
+        email = PasswordService.verify_exchange_token(exchange_token)
+        if not email:
+            return None
+        user = self.user_repo.get_user_by_email(email)
+        if not user:
+            return None
+
         jwt = PasswordService.generate_access_token(user.id)
         refresh_token = PasswordService.generate_refresh_token()
         if refresh_token is None:

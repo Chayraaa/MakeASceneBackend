@@ -62,21 +62,37 @@ def google_callback():
     if not user_info:
         return {"error": "Failed to fetch user info from Google"}, 400
 
-    res = current_app.google_oauth_service.authenticate_user(user_info)
-    if not res:
+    exchange = current_app.google_oauth_service.authenticate_user(user_info)
+    if not exchange:
         return {"error": "Failed to authenticate user"}, 400
-    token, refresh_token = res
 
     return {
-        "message": "Login successful. Use token for authentication.",
+        "exchange": exchange
+    }, 201
+
+
+@auth.route("/oauth/exchange", methods=["POST"])
+@validate
+def exchange_token():
+    data = request.get_json()
+    exchange = data.get("exchange")
+    res = current_app.google_oauth_service.exchange(exchange)
+    if not res:
+        return {
+            "error": "unauthorized",
+            "message": "Invalid exchange token."
+        }, 401
+    token, refresh_token = res
+    return {
+        "message": "Login successful.",
         "access_token": token,
         "refresh_token": refresh_token
-    }, 201
+    }, 200
 
 
 @auth.route("/email/confirm", methods=["GET"])
 @validate
-def confirm_password():
+def confirm_email():
     params = request.args
     token = params.get("token")
     if current_app.auth_service.confirm_email(token):
@@ -84,10 +100,10 @@ def confirm_password():
     return {"error": "unauthorized", "message": "Invalid credentials."}, 401
 
 
-@auth.route("/email/resend", methods=["GET"])
+@auth.route("/email/resend", methods=["POST"])
 @validate
 def resend_mail():
-    params = request.args
-    email = params.get("email")
+    data = request.get_json()
+    email = (data.get("email") or "").strip().replace(" ", "")
     current_app.user_service.resend_confirmation_email(email)
     return {"message": "Email sent if an unconfirmed user with that email exists."}, 200

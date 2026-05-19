@@ -73,13 +73,14 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
-  /auth/confirm-email:
+  /auth/email/confirm:
     get:
       summary: Confirm Email
       deprecated: false
       description: Used to confirm an account for creation via a sent email
       operationId: confirmPassword
-      tags: []
+      tags:
+        - Authentication
       parameters:
         - name: token
           in: query
@@ -106,13 +107,14 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
-  /auth/resend-email:
+  /auth/email/resend:
     get:
       summary: Resend Email
       deprecated: false
       description: Used to request a resend of the confirmation email
       operationId: resendEmail
-      tags: []
+      tags:
+        - Authentication
       parameters:
         - name: email
           in: query
@@ -131,6 +133,39 @@ paths:
               example:
                 message: Email sent if an unconfirmed user with that email exists.
           headers: {}
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /auth/password/confirm:
+    post:
+      summary: Change Password
+      deprecated: false
+      description: Used when the password should be changed or was forgotten
+      tags:
+        - Authentication
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordChanged'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
           description: Validation error – one or more fields failed validation
@@ -414,6 +449,31 @@ components:
             - Email sent if an unconfirmed user with that email exists.
       required:
         - message
+    ChangePasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          examples:
+            - ltmk1VomO8dTxdKQEVYC39TKtCzU...
+        new_password:
+          type: string
+          minLength: 8
+          examples:
+            - securePass123
+          format: password
+      required:
+        - token
+        - new_password
+    PasswordChanged:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - Password was changed
+      required:
+        - message
     CreateUserRequest:
       type: object
       required:
@@ -481,7 +541,18 @@ components:
         application/json:
           schema:
             type: object
-            properties: {}
+            properties:
+              error:
+                type: string
+                examples:
+                  - unauthorized
+              message:
+                type: string
+                examples:
+                  - Invalid credentials.
+            required:
+              - error
+              - message
           examples:
             Success:
               summary: Success

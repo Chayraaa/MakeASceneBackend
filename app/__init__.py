@@ -25,6 +25,7 @@ from openapi_core import OpenAPI
 from app.database_models.user_model import UserModel
 from app.database_models.refresh_token_model import RefreshTokenModel
 from app.database_models.confirm_token_model import ConfirmTokenModel
+from app.database_models.password_reset_token_model import PasswordResetTokenModel
 
 # Open API file path
 open_api_file_name = "makeascene.openapi.yaml"
@@ -79,7 +80,7 @@ def setup_database(app: Flask):
                     table_obj.create(db.engine)
                     app.logger.info(f"Created table: {table_name}")
                 except Exception as e:
-                    app.logger.error(f"Error creating table {table_name}")
+                    app.logger.error(f"Error creating table {table_name} with error {e}")
             else:
                 app.logger.info(f"Table {table_name} already exists")
 
@@ -102,7 +103,8 @@ def setup_services(app: Flask):
     app.user_service = UserService(storage_unit_of_work.user_repo, storage_unit_of_work.email_repo,
                                    storage_unit_of_work.confirm_token_repo)
     app.auth_service = AuthService(storage_unit_of_work.user_repo, storage_unit_of_work.refresh_token_repo,
-                                   storage_unit_of_work.confirm_token_repo)
+                                   storage_unit_of_work.confirm_token_repo, storage_unit_of_work.email_repo,
+                                   storage_unit_of_work.password_reset_token_repo)
     app.image_service = ImageService(storage_unit_of_work.image_storage,
                                      base_url=os.environ.get("BASE_URL", "http://127.0.0.1:5000"))
     app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo,

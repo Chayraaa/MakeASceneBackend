@@ -140,7 +140,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
-  /auth/password/confirm:
+  /auth/password/reset:
     post:
       summary: Change Password
       deprecated: false
@@ -167,6 +167,73 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /auth/logout:
+    post:
+      summary: Logout
+      deprecated: false
+      description: Logs a user out. Meaning it invalidates the refresh tokens
+      operationId: logout
+      tags: []
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+              example: >
+                <!doctype html>
+
+                <html lang=en>
+
+                <title>404 Not Found</title>
+
+                <h1>Not Found</h1>
+
+                <p>The requested URL was not found on the server. If you entered
+                the URL manually please check your spelling and try again.</p>
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /auth/password/request-reset:
+    post:
+      summary: Request Password Reset
+      deprecated: false
+      description: Used to request a password change with an email.
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailResendRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailSent'
+          headers: {}
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
           description: Validation error – one or more fields failed validation
@@ -527,6 +594,15 @@ components:
             - test@test.com
       required:
         - email
+    LogoutResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples:
+            - All refresh tokens were invalidated.
+      required:
+        - message
     CreateUserRequest:
       type: object
       required:

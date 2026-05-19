@@ -1,7 +1,9 @@
 from authlib.integrations.base_client import MismatchingStateError
 from flask import Blueprint, request, current_app, url_for
 
-from app import validate
+from app import validate, login_required
+from app.domain_models.user import User
+from app.services.password_service import PasswordService
 
 auth = Blueprint('auth', __name__)
 
@@ -32,6 +34,15 @@ def login():
         "access_token": token,
         "refresh_token": refresh_token
     }, 201
+
+
+@auth.route("/logout", methods=["POST"])
+@validate
+@login_required
+def logout(user: User):
+    if current_app.auth_service.logout(user):
+        return {"message": "Logout successful."}, 200
+    return {}, 500
 
 
 @auth.route("/oauth/redirect", methods=["GET"])
@@ -107,3 +118,27 @@ def resend_mail():
     email = (data.get("email") or "").strip().replace(" ", "")
     current_app.user_service.resend_confirmation_email(email)
     return {"message": "Email sent if an unconfirmed user with that email exists."}, 200
+
+
+@auth.route("/password/request-reset", methods=["POST"])
+@validate
+def request_reset_password():
+    data = request.get_json()
+    email = (data.get("email") or "").strip().replace(" ", "")
+    if current_app.auth_service.request_password_reset(email):
+        return {"message": "Password reset email sent if an account with that email exists."}, 200
+    return {}, 500
+
+
+@auth.route("/password/reset", methods=["POST"])
+@validate
+def reset_password():
+    data = request.get_json()
+    token = data.get("token")
+    new_password = data.get("new_password")
+    if current_app.auth_service.reset_password(token, new_password):
+        return {"message": "Password reset successful."}, 200
+    return {
+        "error": "unauthorized",
+        "message": "Invalid token."
+    }, 401

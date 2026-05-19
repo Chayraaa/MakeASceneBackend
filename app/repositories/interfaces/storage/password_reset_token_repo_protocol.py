@@ -1,0 +1,16 @@
+from typing import Protocol
+
+from app.domain_models.password_reset_token import PasswordResetToken
+from app.domain_models.user import User
+
+
+class PasswordResetTokenRepoProtocol(Protocol):
+    def __init__(self, session): ...
+
+    def create(self, hashed_token: str, user: User) -> bool: ...
+
+    def get_by_token_hash(self, hashed_token: str) -> PasswordResetToken | None: ...
+
+    def get_by_user(self, user: User) -> list[PasswordResetToken]: ...
+
+    def revoke(self, password_reset_token: PasswordResetToken) -> bool: ...

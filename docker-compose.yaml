@@ -66,8 +66,23 @@ services:
     volumes:
       - typesense_data:/data
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      ollama serve &
+      sleep 5 &&
+      ollama pull phi3:mini &&
+      wait
+      "
 
 volumes:
   postgres_data:
   minio_data:
   typesense_data:
+  ollama_data:

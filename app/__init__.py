@@ -209,9 +209,10 @@ def add_test_tags(app):
     with open(path, "r", encoding="utf-8") as f:
         tags = [line.strip() for line in f if line.strip()]
     with app.app_context():
-        for name in tags:
+        for i, name in enumerate(tags):
             try:
                 app.tag_service.create_tag(name=name)
+                print(f"created tag '{name}', {i + 1}/{len(tags)}")
             except Exception as e:
                 print(f"failed to create tag '{name}':", e)
     print("test tags added")

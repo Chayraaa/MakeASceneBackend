@@ -1,6 +1,7 @@
 import logging
 import os
 from functools import wraps
+from time import sleep
 
 import yaml
 from authlib.integrations.flask_client import OAuth
@@ -17,9 +18,12 @@ from app.services.auth_service import AuthService
 from app.services.image_service import ImageService
 from app.services.password_service import PasswordService
 from app.services.google_oauth_service import GoogleOauthService
+from app.services.tag_service import TagService
 from app.services.user_service import UserService
 from app.extensions import db, migrate
 from openapi_core import OpenAPI
+import typesense
+from app.extensions import typesense_client
 
 # Add all the db database_models here
 from app.database_models.user_model import UserModel
@@ -101,6 +105,8 @@ def setup_services(app: Flask):
                                      base_url=os.environ.get("BASE_URL", "http://127.0.0.1:5000"))
     app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo,
                                                   storage_unit_of_work.refresh_token_repo)
+    app.tag_service = TagService(storage_unit_of_work.tag_repo, storage_unit_of_work.saved_tag_repo,
+                                 storage_unit_of_work.blocked_tag_repo, storage_unit_of_work.search_engine)
 
 
 # Add all the routes here (see health as example)
@@ -113,6 +119,8 @@ def setup_routes(app: Flask):
     app.register_blueprint(image, url_prefix="/v1/image")
     from .routes.auth import auth
     app.register_blueprint(auth, url_prefix="/v1/auth")
+    from .routes.tag import tags
+    app.register_blueprint(tags, url_prefix="/v1/tags")
 
 
 ########################
@@ -194,6 +202,33 @@ def open_api_page(app):
     app.register_blueprint(swagger_ui, url_prefix=swagger_url)
 
 
+def add_test_tags(app):
+    import os
+    path = os.path.join(os.path.dirname(__file__), "tags.txt")
+    tags = []
+    with open(path, "r", encoding="utf-8") as f:
+        tags = [line.strip() for line in f if line.strip()]
+    with app.app_context():
+        for name in tags:
+            try:
+                app.tag_service.create_tag(name=name)
+            except Exception as e:
+                print(f"failed to create tag '{name}':", e)
+    print("test tags added")
+
+
+def setup_search_engine(app):
+    with app.app_context():
+        for _ in range(10):
+            try:
+                app.tag_service.load_schemas()
+                break
+            except Exception as e:
+                print("failed to load schemas:", e)
+                print("retrying...")
+                sleep(5)
+
+
 # Here everything for app creation is inited.
 def create_app(testing: bool = False):
     app = Flask(__name__)
@@ -204,6 +239,8 @@ def create_app(testing: bool = False):
     if testing:
         os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
         app.config["TESTING"] = True
+    if os.getenv("FLASK_ENV") == "setup":
+        os.environ["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost:5432/makeascene"
 
     setup_logging(app)
     setup_openapi(app)
@@ -212,5 +249,9 @@ def create_app(testing: bool = False):
     setup_services(app)
     setup_routes(app)
     open_api_page(app)
+
+    if os.getenv("FLASK_ENV") == "setup":
+        setup_search_engine(app)
+        add_test_tags(app)
 
     return app

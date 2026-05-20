@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 
 from app.domain_models.user import User
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
-from app.repositories.interfaces.storage.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
-from app.repositories.interfaces.storage.password_reset_token_repo_protocol import PasswordResetTokenRepoProtocol
-from app.repositories.interfaces.storage.refresh_token_repo_protocol import RefreshTokenRepoProtocol
+from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
+from app.repositories.interfaces.storage.auth.password_reset_token_repo_protocol import PasswordResetTokenRepoProtocol
+from app.repositories.interfaces.storage.auth.refresh_token_repo_protocol import RefreshTokenRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
 from app.services.password_service import PasswordService
 import os
@@ -133,7 +133,7 @@ class AuthService:
 
         self.refresh_token_repo.revoke(session)
         self.refresh_token_repo.create(
-            user=User(id=session.user_id, hashed_password="", oauth="", email=""),
+            user=User(id=session.user_id, hashed_password="", oauth="", email="", created_at=datetime.now(timezone.utc)),
             hashed_token=new_refresh_token_hash,
         )
 

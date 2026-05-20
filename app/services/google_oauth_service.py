@@ -1,4 +1,4 @@
-from app.repositories.interfaces.storage.refresh_token_repo_protocol import RefreshTokenRepoProtocol
+from app.repositories.interfaces.storage.auth.refresh_token_repo_protocol import RefreshTokenRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
 from app.services.password_service import PasswordService
 

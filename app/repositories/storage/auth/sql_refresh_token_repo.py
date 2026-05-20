@@ -1,7 +1,5 @@
-from flask_sqlalchemy.session import Session
-
-from app.database_models.refresh_token_model import RefreshTokenModel
-from app.domain_models.refresh_token import RefreshToken
+from app.database_models.auth.refresh_token_model import RefreshTokenModel
+from app.domain_models.auth.refresh_token import RefreshToken
 from app.domain_models.user import User
 
 

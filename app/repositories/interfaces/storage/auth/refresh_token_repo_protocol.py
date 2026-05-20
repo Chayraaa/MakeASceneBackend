@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.domain_models.refresh_token import RefreshToken
+from app.domain_models.auth.refresh_token import RefreshToken
 from app.domain_models.user import User
 
 

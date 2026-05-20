@@ -14,15 +14,31 @@ class SqlUserRepo:
         db_user = self.session.get(UserModel, user_id)
         if not db_user:
             return None
-        return User(id=db_user.id, hashed_password=db_user.password, oauth=db_user.oauth_method, email=db_user.email,
-                    confirmed=db_user.confirmed)
+        return User(
+            id=db_user.id,
+            hashed_password=db_user.password,
+            oauth=db_user.oauth_method,
+            email=db_user.email,
+            confirmed=db_user.confirmed,
+            created_at=db_user.created_at,
+            mature=db_user.mature,
+            email_preference=db_user.email_preference
+        )
 
     def get_user_by_email(self, email: str) -> User | None:
         db_user = self.session.query(UserModel).filter_by(email=email).first()
         if not db_user:
             return None
-        return User(id=db_user.id, hashed_password=db_user.password, oauth=db_user.oauth_method, email=db_user.email,
-                    confirmed=db_user.confirmed)
+        return User(
+            id=db_user.id,
+            hashed_password=db_user.password,
+            oauth=db_user.oauth_method,
+            email=db_user.email,
+            confirmed=db_user.confirmed,
+            created_at=db_user.created_at,
+            mature=db_user.mature,
+            email_preference=db_user.email_preference
+        )
 
     def create_user(self, email: str, password: str, oauth="local") -> bool:
         if self.get_user_by_email(email):
@@ -38,5 +54,8 @@ class SqlUserRepo:
         db_user.oauth_method = user.oauth
         db_user.email = user.email
         db_user.confirmed = user.confirmed
+        db_user.created_at = user.created_at
+        db_user.mature = user.mature
+        db_user.email_preference = user.email_preference
         self.session.commit()
         return True

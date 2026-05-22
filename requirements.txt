@@ -18,3 +18,4 @@ resend
 flask-migrate
 python-dotenv
 typesense
+nltk

@@ -1,6 +1,6 @@
 from app.extensions import db, typesense_client
 from app.repositories.external.resend_email_repo import ResendEmailRepo
-from app.repositories.external.search_engine.typesense_search_engine_repo import TypesenseSearchEngineRepo
+from app.repositories.external.search_engine.typesense_tag_search_repo import TypesenseTagSearchRepo
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
 from app.repositories.interfaces.external.search_engine_protocol import SearchEngineProtocol
 from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
@@ -35,4 +35,4 @@ class DeployUnitOfWork:
         self.tag_repo: TagRepoProtocol = SqlTagRepo(db.session)
         self.saved_tag_repo: SavedTagRepoProtocol = SqlSavedTagRepo(db.session)
         self.blocked_tag_repo: BlockedTagRepoProtocol = SqlBlockedTagRepo(db.session)
-        self.search_engine: SearchEngineProtocol = TypesenseSearchEngineRepo(typesense_client)
+        self.tag_search_engine: SearchEngineProtocol = TypesenseTagSearchRepo(typesense_client)

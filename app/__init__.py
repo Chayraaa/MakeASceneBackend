@@ -106,7 +106,7 @@ def setup_services(app: Flask):
     app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo,
                                                   storage_unit_of_work.refresh_token_repo)
     app.tag_service = TagService(storage_unit_of_work.tag_repo, storage_unit_of_work.saved_tag_repo,
-                                 storage_unit_of_work.blocked_tag_repo, storage_unit_of_work.search_engine)
+                                 storage_unit_of_work.blocked_tag_repo, storage_unit_of_work.tag_search_engine)
 
 
 # Add all the routes here (see health as example)
@@ -212,10 +212,10 @@ def add_test_tags(app):
         for i, name in enumerate(tags):
             try:
                 app.tag_service.create_tag(name=name)
-                print(f"created tag '{name}', {i + 1}/{len(tags)}")
+                print(f"[test tags] created tag '{name}', {i + 1}/{len(tags)}")
             except Exception as e:
-                print(f"failed to create tag '{name}':", e)
-    print("test tags added")
+                print(f"[test tags] failed to create tag '{name}':", e)
+    print("[test tags] test tags added")
 
 
 def setup_search_engine(app):
@@ -225,8 +225,8 @@ def setup_search_engine(app):
                 app.tag_service.load_schemas()
                 break
             except Exception as e:
-                print("failed to load schemas:", e)
-                print("retrying...")
+                print("[test tags] failed to load schemas:", e)
+                print("[test tags] retrying...")
                 sleep(5)
 
 

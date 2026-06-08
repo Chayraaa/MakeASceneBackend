@@ -1,6 +1,6 @@
 from app.domain_models.tags.tag import Tag
 from app.domain_models.user import User
-from app.repositories.interfaces.external.search_engine_protocol import SearchEngineProtocol
+from app.repositories.interfaces.external.search_engine_protocol import SearchEngineTagProtocol
 from app.repositories.interfaces.storage.tags.blocked_tag_repo_protocol import BlockedTagRepoProtocol
 from app.repositories.interfaces.storage.tags.saved_tag_repo_protocol import SavedTagRepoProtocol
 from app.repositories.interfaces.storage.tags.tag_repo_protocol import TagRepoProtocol
@@ -8,7 +8,7 @@ from app.repositories.interfaces.storage.tags.tag_repo_protocol import TagRepoPr
 
 class TagService:
     def __init__(self, tag_repo: TagRepoProtocol, saved_tag_repo: SavedTagRepoProtocol,
-                 blocked_tag_repo: BlockedTagRepoProtocol, search_engine_repo: SearchEngineProtocol):
+                 blocked_tag_repo: BlockedTagRepoProtocol, search_engine_repo: SearchEngineTagProtocol):
         self.tag_repo = tag_repo
         self.saved_tag_repo = saved_tag_repo
         self.blocked_tag_repo = blocked_tag_repo
@@ -28,6 +28,10 @@ class TagService:
 
     def query_tags(self, query: str) -> list[Tag]:
         tags = self.search_engine_repo.search_for_tag(query)
+        return tags
+
+    def autocomplete(self, query: str, page: int) -> list[Tag]:
+        tags = self.search_engine_repo.search_by_semantic(query, page)
         return tags
 
     def delete_tag(self, tag: Tag) -> bool:

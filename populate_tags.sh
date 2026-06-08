@@ -1,5 +1,7 @@
-$env:FLASK_ENV = "setup"
-$env:TYPESENSE_API_KEY = "asdfg"
+#!/bin/sh
+
+export FLASK_ENV="setup"
+export TYPESENSE_API_KEY="asdfg"
 
 python -c "
 import psycopg2

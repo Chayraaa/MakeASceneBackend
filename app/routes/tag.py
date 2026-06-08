@@ -9,7 +9,12 @@ tags = Blueprint("tags", __name__)
 @validate
 def get_tags():
     query = request.args.get("query")
-    res = current_app.tag_service.query_tags(query)
+    autocomplete = request.args.get("autocomplete")
+    page = (request.args.get("page") or 0)
+    if autocomplete:
+        res = current_app.tag_service.autocomplete(query, page)
+    else:
+        res = current_app.tag_service.query_tags(query)
 
     formatted = [
         {

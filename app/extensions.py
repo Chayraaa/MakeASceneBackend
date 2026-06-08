@@ -6,6 +6,8 @@ import os
 
 if os.getenv("FLASK_ENV") == "setup":
     os.environ["TYPESENSE_HOST"] = "localhost"
+if os.getenv("FLASK_ENV") == "migration":
+    os.environ["TYPESENSE_API_KEY"] = "asdfg"
 
 db = SQLAlchemy()
 migrate = Migrate()

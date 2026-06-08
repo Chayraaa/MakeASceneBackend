@@ -89,16 +89,27 @@ class TypesenseTagSearchRepo:
             print("remove_tag failed:", e)
             return False
 
-    def search(self, query: str) -> list:
+    def search_by_semantic(self, query: str, page: int) -> list[Tag]:
         self._ensure_ready()
 
         try:
             result = self.client.collections["tags"].documents.search({
                 "q": query,
-                "query_by": "name"
+                "query_by": "name",
+                "num_typos": 2,
+                "prefix": "true",
+                "per_page": 25,
+                "page": page
             })
 
-            return result.get("hits", [])
+            tags = []
+            for hit in result.get("hits", []):
+                name = hit["document"]["name"]
+                tags.append(Tag(
+                    id=int(hit["document"]["id"]),
+                    name=name
+                ))
+            return tags
         except Exception as e:
             print("[Tag search] search failed:", e)
             return []

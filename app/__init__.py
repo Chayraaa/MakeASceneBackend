@@ -220,7 +220,7 @@ def add_test_tags(app):
 
 def setup_search_engine(app):
     with app.app_context():
-        for _ in range(10):
+        while True:
             try:
                 app.tag_service.load_schemas()
                 break
@@ -237,6 +237,7 @@ def create_app(testing: bool = False):
     load_dotenv("secrets.env")
     if os.getenv("FLASK_ENV") == "migration":
         os.environ["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost:5432/makeascene"
+        os.environ["TYPESENSE_API_KEY"] = "asdfg"
     if testing:
         os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
         app.config["TESTING"] = True

@@ -835,10 +835,22 @@ paths:
         - name: query
           in: query
           description: ''
-          required: false
+          required: true
           example: test tag
           schema:
             type: string
+        - name: autocomplete
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
       responses:
         '200':
           description: ''

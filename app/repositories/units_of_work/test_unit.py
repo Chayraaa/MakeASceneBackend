@@ -1,7 +1,7 @@
 from app.extensions import db
 from app.repositories.external.resend_email_repo import ResendEmailRepo
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
-from app.repositories.interfaces.external.search_engine_protocol import SearchEngineProtocol
+from app.repositories.interfaces.external.search_engine_protocol import SearchEngineTagProtocol
 from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
 from app.repositories.interfaces.storage.image_storage_protocol import ImageStorageProtocol
 from app.repositories.interfaces.storage.auth.password_reset_token_repo_protocol import PasswordResetTokenRepoProtocol
@@ -35,4 +35,4 @@ class TestUnitOfWork:
         self.tag_repo: TagRepoProtocol = SqlTagRepo(db.session)
         self.saved_tag_repo: SavedTagRepoProtocol = SqlSavedTagRepo(db.session)
         self.blocked_tag_repo: BlockedTagRepoProtocol = SqlBlockedTagRepo(db.session)
-        self.search_engine: SearchEngineProtocol = None
+        self.search_engine: SearchEngineTagProtocol = None

@@ -35,4 +35,4 @@ class TestUnitOfWork:
         self.tag_repo: TagRepoProtocol = SqlTagRepo(db.session)
         self.saved_tag_repo: SavedTagRepoProtocol = SqlSavedTagRepo(db.session)
         self.blocked_tag_repo: BlockedTagRepoProtocol = SqlBlockedTagRepo(db.session)
-        self.search_engine: SearchEngineTagProtocol = None
+        self.tag_search_engine: SearchEngineTagProtocol = None

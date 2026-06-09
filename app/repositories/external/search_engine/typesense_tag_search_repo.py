@@ -99,6 +99,7 @@ class TypesenseTagSearchRepo:
                 "num_typos": 2,
                 "prefix": "true",
                 "per_page": 25,
+                "sort_by": "_text_match:desc",
                 "page": page
             })
 
@@ -120,17 +121,17 @@ class TypesenseTagSearchRepo:
         # Pick whichever stem is shorter — more likely to match partial tag names
         return min(en, de, key=len)
 
-    def search_for_tag(self, tag_name: str) -> list[Tag]:
+    def search_with_embedding(self, query: str) -> list[Tag]:
         self._ensure_ready()
 
-        search_query = tag_name
-        print(f"[Tag Search] Searching for '{tag_name}'")
-        stemmed = self._stem(tag_name)
+        search_query = query
+        print(f"[Tag Search] Searching for '{query}'")
+        stemmed = self._stem(query)
 
         try:
             # Original query with typo tolerance and prefix
             exact = self.client.collections["tags"].documents.search({
-                "q": tag_name,
+                "q": query,
                 "query_by": "name",
                 "num_typos": 1,
                 "prefix": "true",
@@ -139,8 +140,8 @@ class TypesenseTagSearchRepo:
             hits = exact.get("hits", [])
 
             # If no hit, retry with the stem (e.g. "Jamming" → "jam")
-            if not hits and stemmed != tag_name.lower():
-                print(f"[Tag Search] No hit for '{tag_name}', retrying with stem '{stemmed}'")
+            if not hits and stemmed != query.lower():
+                print(f"[Tag Search] No hit for '{query}', retrying with stem '{stemmed}'")
                 stemmed_result = self.client.collections["tags"].documents.search({
                     "q": stemmed,
                     "query_by": "name",
@@ -157,7 +158,7 @@ class TypesenseTagSearchRepo:
             else:
                 # If no hit with stem, expand via llm (less than 1s waiting time tolerance)
                 print(f"[Tag Search] No cached match, expanding query live")
-                search_query = self.expander.expand_tag_fast(tag_name)
+                search_query = self.expander.expand_tag_fast(query)
                 print(f"[Tag Search] Expansion: {search_query}")
 
         except Exception as e:

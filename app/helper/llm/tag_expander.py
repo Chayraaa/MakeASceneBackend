@@ -48,7 +48,7 @@ class TagExpander:
             response = requests.post(
                 self.ollama,
                 json={
-                    "model": "llama3.1:8b",
+                    "model": "gemma2:9b",
                     "prompt": self.PROMPT_TEMPLATE.format(tag_name=tag_name),
                     "stream": False,
                     "options": {

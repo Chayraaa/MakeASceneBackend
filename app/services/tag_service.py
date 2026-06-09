@@ -27,7 +27,7 @@ class TagService:
         return True
 
     def query_tags(self, query: str) -> list[Tag]:
-        tags = self.search_engine_repo.search_for_tag(query)
+        tags = self.search_engine_repo.search_with_embedding(query)
         return tags
 
     def autocomplete(self, query: str, page: int) -> list[Tag]:

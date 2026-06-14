@@ -43,10 +43,14 @@ class TagService:
         return True
 
     def save_tag(self, user: User, tag: Tag) -> bool:
+        if self.tag_repo.get_tag_by_id(tag.id) is None:
+            return False
         self.saved_tag_repo.create(user, tag)
         return True
 
     def block_tag(self, user: User, tag: Tag) -> bool:
+        if self.tag_repo.get_tag_by_id(tag.id) is None:
+            return False
         self.blocked_tag_repo.create(user, tag)
         return True
 
@@ -63,3 +67,19 @@ class TagService:
             return False
         self.blocked_tag_repo.remove_blocked_tag(blocked_tag)
         return True
+
+    def get_saved_tags(self, user: User, page: int, page_size: int) -> list[Tag | None]:
+        user_tags = self.saved_tag_repo.get_saved_tags_by_user(user)
+        return [self.tag_repo.get_tag_by_id(saved_tag.tag_id) for saved_tag in user_tags][
+            (page - 1) * page_size: page * page_size]
+
+    def get_blocked_tags(self, user: User, page: int, page_size: int) -> list[Tag | None]:
+        user_tags = self.blocked_tag_repo.get_blocked_tags_by_user(user)
+        return [self.tag_repo.get_tag_by_id(saved_tag.tag_id) for saved_tag in user_tags][
+            (page - 1) * page_size: page * page_size]
+
+    def get_tag(self, tag_id: int) -> Tag | None:
+        tag = self.tag_repo.get_tag_by_id(tag_id)
+        if not tag:
+            return None
+        return tag

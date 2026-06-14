@@ -139,3 +139,6 @@ class UserService:
 
     def update_user(self, user: User) -> bool:
         return self.user_repo.update_user(user)
+
+    def delete_user(self, user: User) -> bool:
+        return self.user_repo.delete_user(user)

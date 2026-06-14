@@ -7,6 +7,7 @@ import yaml
 from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, current_app
+from flask_cors import CORS
 from openapi_core.contrib.flask import FlaskOpenAPIRequest
 from openapi_core.exceptions import OpenAPIError
 from openapi_core.validation.request.exceptions import InvalidRequestBody
@@ -233,6 +234,7 @@ def setup_search_engine(app):
 # Here everything for app creation is inited.
 def create_app(testing: bool = False):
     app = Flask(__name__)
+    CORS(app)
     load_dotenv("normal.env")
     load_dotenv("secrets.env")
     if os.getenv("FLASK_ENV") == "migration":

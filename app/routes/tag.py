@@ -24,3 +24,19 @@ def get_tags():
         for tag in res
     ]
     return {"tags": formatted}, 200
+
+
+@tags.route("/<int:id>", methods=["GET"])
+@validate
+def get_tag_by_id(id: int):
+    res = current_app.tag_service.get_tag(id)
+    if res:
+        return {
+            "id": res.id,
+            "name": res.name,
+            "parent": res.parent
+        }, 200
+    return {
+        "error": "Not Found",
+        "message": "Tag was not found"
+    }

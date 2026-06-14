@@ -19,3 +19,4 @@ flask-migrate
 python-dotenv
 typesense
 nltk
+flask-cors

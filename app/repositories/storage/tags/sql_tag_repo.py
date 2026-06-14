@@ -17,19 +17,20 @@ class SqlTagRepo:
         db_tag = self.session.query(TagModel).filter_by(name=name).first()
         if not db_tag:
             return None
-        return Tag(id=db_tag.id, name=db_tag.name)
+        return Tag(id=db_tag.id, name=db_tag.name, parent=db_tag.parent)
 
     def get_tag_by_id(self, tag_id: int) -> Tag | None:
         db_tag = self.session.get(TagModel, tag_id)
         if not db_tag:
             return None
-        return Tag(id=db_tag.id, name=db_tag.name)
+        return Tag(id=db_tag.id, name=db_tag.name, parent=db_tag.parent)
 
     def update_tag(self, tag: Tag) -> bool:
         db_tag = self.session.get(TagModel, tag.id)
         if not db_tag:
             return False
         db_tag.name = tag.name
+        db_tag.parent = tag.parent
         self.session.commit()
         return True
 

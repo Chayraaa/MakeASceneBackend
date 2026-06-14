@@ -14,9 +14,9 @@ tags:
   - name: Search
   - name: Site Account
 paths:
-  /users/me/tags/{tag_id}:
+  /users/me/tags/{id}:
     delete:
-      summary: Remove tag
+      summary: Unsubscribe tag
       deprecated: false
       description: Remove a tag if it exists.
       operationId: deleteTag
@@ -24,7 +24,44 @@ paths:
         - Users
         - Tags
       parameters:
-        - name: tag_id
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    post:
+      summary: Subscribe tag
+      deprecated: false
+      description: Saves a tag if it exists.
+      operationId: saveTag
+      tags:
+        - Users
+        - Tags
+      parameters:
+        - name: id
           in: path
           description: ''
           required: true
@@ -53,53 +90,29 @@ paths:
       security:
         - BearerAuth: []
   /users/me/tags:
-    post:
-      summary: Save tag
-      deprecated: false
-      description: Saves a tag if it exists.
-      operationId: saveTag
-      tags:
-        - Users
-        - Tags
-      parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TagSaveRequest'
-            examples: {}
-        required: true
-      responses:
-        '200':
-          description: ''
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TagResponse'
-          headers: {}
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-          description: Authentication failed
-        '404':
-          $ref: '#/components/responses/NotFound'
-          description: ''
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-          description: Validation error – one or more fields failed validation
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-          description: ''
-      security:
-        - BearerAuth: []
     get:
-      summary: Get tags
+      summary: Get all subscribed tags
       deprecated: false
       description: Get the tags you saved.
       operationId: getTags
       tags:
         - Users
         - Tags
-      parameters: []
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
       responses:
         '200':
           description: ''
@@ -119,7 +132,7 @@ paths:
           description: ''
       security:
         - BearerAuth: []
-  /users/me/tags/block/{tag_id}:
+  /users/me/tags/block/{id}:
     post:
       summary: Block tag
       deprecated: false
@@ -129,12 +142,12 @@ paths:
         - Users
         - Tags
       parameters:
-        - name: tag_id
+        - name: id
           in: path
           description: ''
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         '200':
           description: ''
@@ -166,7 +179,7 @@ paths:
         - Users
         - Tags
       parameters:
-        - name: tag_id
+        - name: id
           in: path
           description: ''
           required: true
@@ -192,6 +205,41 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: ''
+      security:
+        - BearerAuth: []
+  /users/me/tags/block:
+    get:
+      summary: Get all blocked tags
+      deprecated: false
+      description: Returns all the tags a user blocked
+      operationId: getBlockedTags
+      tags:
+        - Users
+        - Tags
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
       security:
         - BearerAuth: []
   /users/me:
@@ -292,7 +340,21 @@ paths:
       tags:
         - Users
         - Message
-      parameters: []
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
       responses:
         '200':
           description: ''
@@ -866,6 +928,39 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
+  /tags/{id}:
+    get:
+      summary: Get info for a tag
+      deprecated: false
+      description: Get data about a specific tag
+      operationId: tagById
+      tags:
+        - Tags
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+          headers: {}
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
   /site-accounts:
     post:
       summary: Create site account
@@ -1072,6 +1167,9 @@ components:
     UserInfoResponse:
       type: object
       properties:
+        id:
+          type: integer
+          description: ID
         email:
           type: string
           format: email
@@ -1080,43 +1178,21 @@ components:
         mature:
           type: boolean
           default: true
-        email-preference:
+        email_preference:
           type: boolean
           default: true
-        messages:
-          type: array
-          items:
-            type: object
-            properties:
-              sender:
-                type: string
-                examples:
-                  - test event
-              message:
-                type: string
-                examples:
-                  - test message
-            required:
-              - sender
-              - message
-        tags:
-          type: array
-          items:
-            $ref: '#/components/schemas/Tag'
-          description: tag
       required:
         - mature
-        - email-preference
+        - email_preference
         - email
-        - messages
-        - tags
+        - id
     PatchUserRequest:
       type: object
       properties:
         mature:
           type: boolean
           default: true
-        email-preference:
+        email_preference:
           type: boolean
           default: true
     CreateUserRequest:
@@ -1245,7 +1321,24 @@ components:
         tags:
           type: array
           items:
-            $ref: '#/components/schemas/Tag'
+            type: object
+            properties:
+              id:
+                type: integer
+                description: ID
+              name:
+                type: string
+                description: name
+                examples:
+                  - test tag
+              parent:
+                type:
+                  - integer
+                  - 'null'
+                description: The parent tag
+            required:
+              - id
+              - name
           description: tag
       required:
         - tags
@@ -1276,6 +1369,11 @@ components:
           description: name
           examples:
             - test tag
+        parent:
+          type:
+            - integer
+            - 'null'
+          description: The parent tag
       required:
         - id
         - name

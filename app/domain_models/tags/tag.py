@@ -5,3 +5,4 @@ from dataclasses import dataclass
 class Tag:
     id: int
     name: str
+    parent: int | None = None

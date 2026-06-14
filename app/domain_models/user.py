@@ -12,3 +12,4 @@ class User:
     confirmed: bool = False
     mature: bool = True
     email_preference: bool = True
+    role: str = "user"

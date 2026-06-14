@@ -1,12 +1,16 @@
 import base64
 from io import BytesIO
+from uuid import uuid4
+
 from app.repositories.interfaces.storage.image_storage_protocol import ImageStorageProtocol
 
 
 def base64_to_binary_io(data_url: str):
     header, b64_data = data_url.split(",", 1)
-    file_bytes = base64.b64decode(b64_data)
-    return BytesIO(file_bytes)
+
+    mime = header.split(";")[0].replace("data:", "")
+
+    return mime, BytesIO(base64.b64decode(b64_data))
 
 
 class ImageService:
@@ -17,3 +21,8 @@ class ImageService:
 
     def get_image_stream(self, key: str):
         return self.storage.get_image(key)
+
+    def save_site_account_image(self, image_data: str):
+        mime, image_data = base64_to_binary_io(image_data)
+        key = self.storage.save_image(f"{self.image_path}/{uuid4()}", image_data, mime)
+        return f"{self.base_url}/{key}"

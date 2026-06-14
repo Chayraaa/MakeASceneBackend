@@ -34,6 +34,7 @@ from app.database_models.auth.password_reset_token_model import PasswordResetTok
 from app.database_models.tags.tag_model import TagModel
 from app.database_models.tags.saved_tags_model import SavedTagModel
 from app.database_models.tags.blocked_tags_model import BlockedTagModel
+from app.database_models.site_account.site_account_model import SiteAccountModel
 
 # Open API file path
 open_api_file_name = "makeascene.openapi.yaml"

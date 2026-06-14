@@ -30,14 +30,15 @@ class MinioImageStorage:
         finally:
             self._bucket_initialized = True
 
-    def save_image(self, key: str, image_data: BinaryIO) -> str:
+    def save_image(self, key: str, image_data: BinaryIO, mime: str) -> str:
         self._ensure_bucket()
         self.client.put_object(
             self.bucket,
             key,
             image_data,
             length=-1,
-            part_size=10 * 1024 * 1024
+            part_size=10 * 1024 * 1024,
+            content_type=mime
         )
 
         return key
@@ -45,8 +46,11 @@ class MinioImageStorage:
     def get_image(self, key: str):
         self._ensure_bucket()
         response = self.client.get_object(self.bucket, key)
+
         try:
-            return response.read()
+            data = response.read()
+            mime = response.headers.get("Content-Type")
+            return data, mime
         finally:
             response.close()
             response.release_conn()

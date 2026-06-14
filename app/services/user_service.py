@@ -1,6 +1,6 @@
 from app.domain_models.user import User
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
-from app.repositories.interfaces.storage.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
+from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
 from app.services.password_service import PasswordService
 import os
@@ -139,3 +139,6 @@ class UserService:
 
     def update_user(self, user: User) -> bool:
         return self.user_repo.update_user(user)
+
+    def delete_user(self, user: User) -> bool:
+        return self.user_repo.delete_user(user)

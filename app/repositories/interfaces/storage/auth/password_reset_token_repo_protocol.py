@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.domain_models.password_reset_token import PasswordResetToken
+from app.domain_models.auth.password_reset_token import PasswordResetToken
 from app.domain_models.user import User
 
 

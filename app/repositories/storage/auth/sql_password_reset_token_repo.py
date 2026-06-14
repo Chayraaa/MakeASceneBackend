@@ -1,6 +1,6 @@
 
-from app.database_models.password_reset_token_model import PasswordResetTokenModel
-from app.domain_models.password_reset_token import PasswordResetToken
+from app.database_models.auth.password_reset_token_model import PasswordResetTokenModel
+from app.domain_models.auth.password_reset_token import PasswordResetToken
 from app.domain_models.user import User
 
 

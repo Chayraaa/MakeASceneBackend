@@ -1,6 +1,5 @@
-from app.database_models.confirm_token_model import ConfirmTokenModel
-from app.domain_models.confirm_token import ConfirmToken
-from app.domain_models.refresh_token import RefreshToken
+from app.database_models.auth.confirm_token_model import ConfirmTokenModel
+from app.domain_models.auth.confirm_token import ConfirmToken
 from app.domain_models.user import User
 
 

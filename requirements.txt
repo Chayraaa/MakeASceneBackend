@@ -17,3 +17,6 @@ argon2-cffi
 resend
 flask-migrate
 python-dotenv
+typesense
+nltk
+flask-cors

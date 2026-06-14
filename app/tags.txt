@@ -1,0 +1,767 @@
+Abendveranstaltung
+Abschlussfeier
+Accessible
+Acoustic
+Akustik
+All-day event
+Anniversary
+Annual fair
+Art
+Atmospheric
+Ausstellung
+Autumn festival
+Baptism
+Barbecue
+Barrierefrei
+Basketball
+Basteln
+Basteln für Kinder
+Beer
+Beer garden
+Benefiz
+Betriebsfeier
+Bier
+Biergarten
+Birthday
+Book launch
+Breakfast event
+Brunch
+Buchvorstellung
+Buffet
+Cabaret
+Campfire
+Casual
+Celebratory
+Charity
+Chess
+Choir
+Chor
+Christmas market
+Circus
+City festival
+City tour
+Classical
+Cocktails
+Coffee
+Comedy
+Company party
+Concert
+Conference
+Confirmation
+Cooking
+Cozy
+Crafting
+Crafts for kids
+Culture
+Cycling tour
+DJ
+Dancing
+Daytime
+Denkmal
+Design
+Donation-based
+Draußen
+Drinks
+Drinnen
+Eco-friendly
+Ehrenamt
+Einmalig
+Electronic
+Elektronisch
+Energetic
+Energetisch
+Entspannt
+Essen
+Evening event
+Exclusive
+Exhibition
+Exklusiv
+Fairground
+Fairy tale
+Familientag
+Familiär
+Family day
+Family-friendly
+Feierlich
+Festive
+Festlich
+Film
+Finger food
+Fingerfood
+Finissage
+Firmung
+Fitness
+Flash mob
+Flashmob
+Flea market
+Flohmarkt
+Folk festival
+Food
+Football
+Fotografie
+Free
+Free entry
+Frühlingsfest
+Frühstücksevent
+Fundraiser
+Fußball
+Führung
+Galerie
+Gallery
+Games
+Ganztagesveranstaltung
+Geburtstag
+Geheimveranstaltung
+Gemeinnützig
+Gemütlich
+Geplant
+Geschichte
+Graduation
+Grillparty
+Groß
+Guerilla-Event
+Guerrilla event
+Haustierfreundlich
+Herbstfest
+Hiking
+History
+Hochzeit
+Hybrid
+In-person
+Indoor
+Intercultural
+Interkulturell
+International
+Intimate
+Jahrmarkt
+Jazz
+Jubiläum
+Kabarett
+Kaffee
+Karaoke
+Kids program
+Kinderprogramm
+Kirmes
+Klassik
+Klein
+Kochen
+Konferenz
+Konzert
+Kostenfreier Eintritt
+Kostenlos
+Kultur
+Kunst
+Lagerfeuer
+Large-scale
+Laufen
+Lesung
+Literatur
+Literature
+Live music
+Live-Musik
+Livestream
+Local
+Lokal
+Lunchtime event
+Magic show
+Market
+Markt
+Meditation
+Mehrtägig
+Members only
+Messe
+Mitmachen
+Mittagsveranstaltung
+Monument
+Multi-day
+Museum
+Music
+Musik
+Märchen
+Nachhaltig
+Nacht
+Networking
+New Year's Eve
+Night
+Non-profit
+Oktoberfest
+One-time
+Online
+Open Mic
+Oper
+Opera
+Outdoor
+Panel discussion
+Participatory
+Pet-friendly
+Photography
+Picknick
+Picnic
+Planned
+Podiumsdiskussion
+Pop
+Pop-up
+Präsenz
+Pub Quiz
+Public
+Puppentheater
+Puppet theater
+Quiz
+Radtour
+Reading
+Regional
+Relaxed
+Rock
+Rollstuhlgerecht
+Romantic
+Romantisch
+Running
+Schach
+Secret event
+Seminar
+Senior-friendly
+Seniorengerecht
+Silvester
+Sommerfest
+Spende
+Spielen
+Spoken Word
+Spontan
+Spontaneous
+Sport
+Spring festival
+Stadtfest
+Stadtführung
+Stimmungsvoll
+Straßenfest
+Street festival
+Summer party
+Surprise
+Sustainable
+Table tennis
+Tagsüber
+Talk
+Tanzen
+Taufe
+Team building
+Teambuilding
+Theater
+Ticket
+Ticketed
+Tischtennis
+Tour
+Tournament
+Trade fair
+Trinken
+Turnier
+Umweltfreundlich
+Ungezwungen
+Upcycling
+VIP
+Vegan
+Vernissage
+Volksfest
+Volleyball
+Volunteering
+Vortrag
+Wanderung
+Wedding
+Weekly
+Weihnachtsmarkt
+Wein
+Weinfest
+Wheelchair-friendly
+Wine
+Wine festival
+Winter festival
+Winterfest
+Workshop
+Wöchentlich
+Yoga
+Zauberei
+Zero Waste
+Zirkus
+Öffentlich
+Überraschung
+Bebop
+Noise
+Noise Music
+Hard bop
+Bop
+Bop Music
+Swing
+Swing Music
+Latin
+Funk
+Fusion
+Hip Hop
+House
+Drum & Bass
+Jungle
+Rap
+Reggae
+Punk
+Punk Rock
+Soul
+Techno
+Trance
+Trap
+Metal
+Indie
+Heavy Metal
+Indie Rock
+Indie Pop
+Indie-Rock
+Electronica
+Electronic Dance Music
+EDM
+EBM
+Electro
+Hardcore
+Metalcore
+Dubstep
+Hard Rock
+Post Rock
+Post Metal
+Progressive Metal
+Psychedelic Rock
+Progressive Rock
+Psychedelic
+Rockabilly
+Groove Metal
+Acid Jazz
+Acid
+Death Metal
+Deathcore
+Gothic Metal
+Gothic
+Gothic Rock
+Doom Metal
+Power Metal
+Game Music
+Musical
+Drama
+Comedy
+Romance
+Horror
+Stoner Rock
+Science
+Jam Session
+Jam
+Party
+Club
+Queer
+LGBTQ+
+Christopher Street Day
+CSD
+Kundgebung
+Wahl
+Wahlveranstaltung
+Afterparty
+After-Show
+Abendessen
+Dinner
+Lunch
+Frühstück
+Brunch
+Jam Session
+Open Stage
+Open Air
+Residency
+Weltpremiere
+Premiere
+Release Party
+Album Release
+Soundcheck
+Backstage
+Meet & Greet
+Signierstunde
+Autogrammstunde
+Award Ceremony
+Preisverleihung
+Gala
+Festakt
+Matinee
+Late Night
+Afterwork
+Sundowner
+Rooftop Event
+Popup Event
+Protest
+Kundgebung
+Demo
+Mahnwache
+Streik
+Sit-in
+Vigil
+Flashmob
+Besetzung
+Happening
+Interventionskunst
+Performance Art
+Rave
+Underground
+After Hour
+Clubnacht
+Maskenball
+Masquerade
+Kostümparty
+Costume Party
+Fetish
+Queer Party
+Drag Show
+Drag
+Burlesque
+Striptease
+Gentlemen's Club
+Ladies Night
+Singles Event
+Speed Dating
+Weinprobe
+Wine Tasting
+Bierprobe
+Beer Tasting
+Gin Tasting
+Whisky Tasting
+Rum Tasting
+Cocktail Workshop
+Barista Workshop
+Kochkurs
+Backkurs
+Grillkurs
+Streetfood
+Food Truck
+Bauernmarkt
+Farmers Market
+Bio-Markt
+Organic Market
+Vegan Market
+Veganer Markt
+Marathon
+Halbmarathon
+Triathlon
+Laufveranstaltung
+Fahrradrennen
+Bike Race
+Skateboarding
+Skaten
+Surfen
+Klettern
+Bouldern
+Kampfsport
+Martial Arts
+Boxen
+Boxing
+Wrestling
+E-Sport
+Esports
+Gaming
+LAN Party
+Dart
+Billard
+Bowling
+Minigolf
+Bogenschießen
+Archery
+Wellness
+Spa
+Massage
+Achtsamkeit
+Mindfulness
+Breathwork
+Meditation
+Sound Healing
+Klangbad
+Sound Bath
+Tantra
+Selbstverteidigung
+Self Defense
+Qi Gong
+Tai Chi
+Pilates
+Kinderfest
+Kindertheater
+Bastelaktion
+Vorlesestunde
+Spielenachmittag
+Schulausflug
+Kindergeburtstag
+Kidsclub
+Babykino
+Baby Concert
+Hackathon
+Startup Event
+Pitch Night
+Barcamp
+Unconference
+Symposium
+Webinar
+Podiumsdiskussion
+Fachvortrag
+Keynote
+Messe
+Trade Show
+Job Fair
+Jobmesse
+Karrieremesse
+Poetry Slam
+Spoken Word
+Lesung
+Buchvorstellung
+Filmvorführung
+Kurzfilm
+Dokumentarfilm
+Stummfilm
+Silent Film
+Improv Theater
+Improvisationstheater
+Puppentheater
+Figurentheater
+Schattentheater
+Shadow Theater
+Pantomime
+Clown
+Straßentheater
+Street Theater
+Zauberei
+Magic
+Illusion
+Escapology
+Feuershow
+Fire Show
+Akrobatik
+Acrobatics
+Jonglage
+Juggling
+Breakdance
+Streetdance
+Tanztheater
+Dance Theater
+Ballett
+Ballet
+Flamenco
+Salsa
+Tango
+Lindy Hop
+Swing Dance
+Volkstanz
+Folk Dance
+Gottesdienst
+Church Service
+Messe
+Mass
+Gebet
+Prayer
+Meditation
+Retreat
+Pilgrimage
+Wallfahrt
+Kirchenkonzert
+Gospel
+Spiritual
+Andacht
+Fasching
+Karneval
+Carnival
+Halloween
+Silvester
+New Year
+Ostern
+Easter
+Walpurgisnacht
+Frühlingsfest
+Sommerfest
+Herbstfest
+Winterfest
+Stadtgeburtstag
+Jubiläum
+Eröffnung
+Opening
+Finissage
+Closing Event
+Abschlussfest
+Einmalig
+Recurring
+Wiederkehrend
+Täglich
+Daily
+Wöchentlich
+Monthly
+Monatlich
+Annually
+Jährlich
+Mehrtägig
+Kurzfristig
+Last Minute
+Spontan
+Sold Out
+Ausverkauft
+Limitiert
+Limited
+Exklusiv
+Members Only
+Invite Only
+Auf Einladung
+Barrierefrei
+Rollstuhlgerecht
+Seniorengerecht
+Haustierfreundlich
+Hundefreundlich
+Dog-friendly
+Familienfreundlich
+Alkoholfrei
+Alcohol-free
+Smoke-free
+Rauchfrei
+Mittelalter
+Mittelalter Markt
+Good Vibes
+Chill
+Chillig
+Laid Back
+Cozy Vibes
+Party Vibes
+Hype
+Euphoric
+Energetic
+Wholesome
+Feel Good
+Positive Energy
+Safe Space
+Inclusive
+Welcoming
+Warm
+Intimate
+Epic
+Legendary
+Unforgettable
+Queer Friendly
+LGBTQ+ Friendly
+Trans Friendly
+Female Friendly
+Women Only
+Frauen Only
+Femme
+Non-Binary
+Diversity
+Divers
+Inklusiv
+POC Friendly
+Intercultural
+Interkulturell
+Expat Friendly
+English Friendly
+Tourist Friendly
+Barrier Free
+Young Adults
+Twenties
+Thirties
+Students
+Studenten
+Families
+Seniors
+Mixed Crowd
+All Ages
+All Welcome
+Solo Friendly
+Singles
+Couples
+Groups
+Must See
+Must Visit
+Trending
+Viral
+Instagrammable
+Fotoworthy
+Hidden Gem
+Geheimtipp
+Insider
+Underground
+Mainstream
+Alternative
+Kultveranstaltung
+Kult
+Iconic
+Klassiker
+Tradition
+Neu
+New
+Erstmalig
+First Edition
+Last Edition
+Finale
+Comeback
+Reunion
+Cash Only
+Kartenzahlung
+Card Payment
+Reservierung erforderlich
+Reservation Required
+Walk-in
+No Tickets Needed
+Ohne Anmeldung
+Anmeldung erforderlich
+Registration Required
+Begrenzte Plätze
+Limited Capacity
+Ausverkauft
+Last Minute
+Kurzfristig
+Pünktlich
+Doors Open
+Einlass
+Late Entry
+Kein Einlass nach
+No Late Entry
+Dresscode
+Smart Casual
+Black Tie
+Kostüm
+Costume Required
+BYOB
+Bring Your Own
+Open Bar
+Free Drinks
+Freigetränke
+Cocktails
+Shots
+Beer Garden Vibes
+Street Food Vibes
+Fingerfood
+Snacks
+Full Menu
+Dinner included
+Brunch included
+Awareness Team
+Safer Space
+No Harassment
+Respectful
+Security
+Beleuchtung
+Well Lit
+Central Location
+Zentral
+Easy Access
+Gut erreichbar
+ÖPNV
+Public Transport
+Parking
+Parkplätze
+Fahrradfreundlich
+Bike Friendly
+Politik
+Movie
+Montag
+Dienstag
+Mittwoch
+Donnerstag
+Freitag
+Samstag
+Sonntag
+Monday
+Tuesday
+Wednesday
+Thursday
+Friday
+Saturday
+Sunday

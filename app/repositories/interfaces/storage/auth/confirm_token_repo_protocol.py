@@ -1,7 +1,6 @@
 from typing import Protocol
 
-from app.domain_models.confirm_token import ConfirmToken
-from app.domain_models.refresh_token import RefreshToken
+from app.domain_models.auth.confirm_token import ConfirmToken
 from app.domain_models.user import User
 
 

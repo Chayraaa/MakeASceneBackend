@@ -41,6 +41,7 @@ def _valid_confirm_token(*, revoked=False, expired=False, user_id=42):
     )
     return token
 
+
 def test_valid_auth():
     user_repo = MagicMock()
     refresh_repo = MagicMock()
@@ -54,9 +55,10 @@ def test_valid_auth():
     service = _make_service(user_repo=user_repo, refresh_repo=refresh_repo)
 
     with patch("app.services.auth_service.PasswordService.verify_password", return_value=True), \
-         patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
-         patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="refresh"), \
-         patch("app.services.auth_service.PasswordService.hash_refresh_token", return_value="hashed_refresh") as mock_hash:
+            patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="refresh"), \
+            patch("app.services.auth_service.PasswordService.hash_refresh_token",
+                  return_value="hashed_refresh") as mock_hash:
         res = service.authenticate_local("test@test.com", "test")
 
     mock_hash.assert_called_once_with("refresh")
@@ -118,8 +120,8 @@ def test_authenticate_local_refresh_token_generation_fails():
     service = _make_service(user_repo=user_repo, refresh_repo=refresh_repo)
 
     with patch("app.services.auth_service.PasswordService.verify_password", return_value=True), \
-         patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
-         patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value=None):
+            patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value=None):
         res = service.authenticate_local("test@test.com", "pw")
 
     assert res is None
@@ -139,13 +141,14 @@ def test_authenticate_local_refresh_token_hash_fails():
     service = _make_service(user_repo=user_repo, refresh_repo=refresh_repo)
 
     with patch("app.services.auth_service.PasswordService.verify_password", return_value=True), \
-         patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
-         patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="token"), \
-         patch("app.services.auth_service.PasswordService.hash_refresh_token", return_value=None):
+            patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="token"), \
+            patch("app.services.auth_service.PasswordService.hash_refresh_token", return_value=None):
         res = service.authenticate_local("test@test.com", "pw")
 
     assert res is None
     refresh_repo.create.assert_not_called()
+
 
 def test_refresh_session_valid():
     refresh_repo = MagicMock()
@@ -154,8 +157,8 @@ def test_refresh_session_valid():
     service = _make_service(refresh_repo=refresh_repo)
 
     with patch("app.services.auth_service.PasswordService.hash_refresh_token", return_value="hashed_refresh"), \
-         patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
-         patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="new_refresh"):
+            patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="new_refresh"):
         res = service.refresh_session("refresh")
 
     refresh_repo.revoke.assert_called_once()
@@ -212,8 +215,8 @@ def test_refresh_session_new_token_generation_fails():
     service = _make_service(refresh_repo=refresh_repo)
 
     with patch("app.services.auth_service.PasswordService.hash_refresh_token", return_value="h"), \
-         patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
-         patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value=None):
+            patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value=None):
         res = service.refresh_session("refresh")
 
     assert res is None
@@ -229,8 +232,8 @@ def test_refresh_session_new_token_hash_fails():
 
     # Erster Call (Lookup-Hash) → "h", zweiter Call (neuer Token-Hash) → None
     with patch("app.services.auth_service.PasswordService.hash_refresh_token", side_effect=["h", None]), \
-         patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
-         patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="new"):
+            patch("app.services.auth_service.PasswordService.generate_access_token", return_value="token"), \
+            patch("app.services.auth_service.PasswordService.generate_refresh_token", return_value="new"):
         res = service.refresh_session("refresh")
 
     assert res is None
@@ -316,6 +319,7 @@ def test_confirm_email_valid():
     user_repo.update_user.assert_called_once_with(user)
     confirm_repo.revoke.assert_called_once_with(found_token)
 
+
 # ---------------------------------------------------------------------------
 # password reset
 # ---------------------------------------------------------------------------
@@ -357,9 +361,8 @@ def test_request_password_reset_success():
     service.email_repo = MagicMock()
 
     with patch("app.services.auth_service.PasswordService.generate_reset_token", return_value="plain-token"), \
-         patch("app.services.auth_service.PasswordService.hash_reset_token", return_value="hashed-token"), \
-         patch("app.services.auth_service._assemble_password_reset_mail", return_value="mail-body"):
-
+            patch("app.services.auth_service.PasswordService.hash_reset_token", return_value="hashed-token"), \
+            patch("app.services.auth_service._assemble_password_reset_mail", return_value="mail-body"):
         res = service.request_password_reset("test@test.com")
 
     assert res is True
@@ -448,8 +451,7 @@ def test_reset_password_success():
     service.password_reset_repo = reset_repo
 
     with patch("app.services.auth_service.PasswordService.hash_reset_token", return_value="hashed"), \
-         patch("app.services.auth_service.PasswordService.hash_password", return_value="new-hash"):
-
+            patch("app.services.auth_service.PasswordService.hash_password", return_value="new-hash"):
         res = service.reset_password("token", "new-pass")
 
     assert res is True

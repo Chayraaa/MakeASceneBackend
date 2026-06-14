@@ -1,5 +1,5 @@
 #!/bin/bash
-
+source secrets.env
 export FLASK_ENV=migration
 
 MESSAGE="${1:-migration}"

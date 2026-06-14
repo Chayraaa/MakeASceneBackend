@@ -12,6 +12,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      typesense:
+        condition: service_healthy
     env_file:
       - normal.env
       - secrets.env
@@ -46,6 +48,42 @@ services:
     volumes:
       - minio_data:/data
 
+  typesense:
+    image: ghcr.io/batonogov/typesense:latest
+    restart: on-failure
+    ports:
+      - "8108:8108"
+    env_file:
+      - normal.env
+      - secrets.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8108/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+
+    volumes:
+      - typesense_data:/data
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      ollama serve &
+      sleep 5 &&
+      ollama pull gemma2:9b &&
+      ollama pull qwen2.5:1.5b &&
+      wait
+      "
+
 volumes:
   postgres_data:
   minio_data:
+  typesense_data:
+  ollama_data:

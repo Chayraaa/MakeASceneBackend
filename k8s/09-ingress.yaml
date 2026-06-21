@@ -1,0 +1,28 @@
+# Requires an Ingress controller in your cluster (e.g. nginx-ingress, Traefik).
+# Install nginx-ingress: https://kubernetes.github.io/ingress-nginx/deploy/
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  namespace: makeascene
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  # ingressClassName: nginx   # Uncomment if your cluster uses IngressClass
+  rules:
+    - host: api.makeascene.social   # ← set your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 5000
+  tls:
+    - hosts:
+        - api.makeascene.social
+      secretName: backend-tls

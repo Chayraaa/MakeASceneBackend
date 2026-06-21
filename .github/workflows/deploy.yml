@@ -1,0 +1,74 @@
+# Place this file at: .github/workflows/deploy.yml  (in your repo, not in k8s/)
+
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - deploy
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/makeascene-backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig.yaml
+          echo "KUBECONFIG=$PWD/kubeconfig.yaml" >> $GITHUB_ENV
+
+      - name: Run database migration
+        run: |
+          sed -e "s/REPLACE_ME/${{ github.sha }}/" \
+              -e "s|your-registry/makeascene-backend:latest|ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}|" \
+              k8s/10-migrate-job.yaml > migrate-job.yaml
+
+          kubectl apply -f migrate-job.yaml
+
+          kubectl wait --for=condition=complete \
+            job/backend-migrate-${{ github.sha }} \
+            -n makeascene --timeout=300s
+
+      - name: Roll out new image
+        run: |
+          kubectl set image deployment/backend \
+            backend=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -n makeascene
+          kubectl rollout status deployment/backend -n makeascene

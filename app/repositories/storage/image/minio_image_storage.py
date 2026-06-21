@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import BinaryIO
+import os
 
 from minio import Minio, S3Error
 
@@ -8,8 +9,8 @@ class MinioImageStorage:
     def __init__(self, bucket: str):
         self.client = Minio(
             endpoint="minio:9000",
-            access_key="minio",
-            secret_key="minio_password",
+            access_key=os.environ.get("MINIO_ROOT_USER"),
+            secret_key=os.environ.get("MINIO_ROOT_PASSWORD"),
             secure=False
         )
 

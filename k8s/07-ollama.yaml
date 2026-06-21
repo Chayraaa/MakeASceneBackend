@@ -1,0 +1,82 @@
+# The compose file started ollama serve in the background and then pulled
+# models in the same entrypoint.  In Kubernetes that pattern is fragile —
+# the pod restarts if the pull fails.  Instead we:
+#   1. Run the main container (ollama serve) normally.
+#   2. Use a post-start lifecycle hook to pull models once the server is up.
+#      The hook runs inside the same container so it shares /root/.ollama.
+#
+# On subsequent restarts the models are already on the PVC, so the pull
+# is a no-op (ollama pull is idempotent).
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: makeascene
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      # Model pulls can take a long time on cold start — give the pod room
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    # Wait until the server is accepting connections
+                    until ollama list > /dev/null 2>&1; do sleep 2; done
+                    ollama pull gemma2:9b
+                    ollama pull qwen2.5:1.5b
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
+          # Readiness waits until serve is up; doesn't wait for model pulls
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "4Gi"
+            # Uncomment if your nodes have GPUs:
+            # limits:
+            #   nvidia.com/gpu: 1
+      volumes:
+        - name: ollama-storage
+          persistentVolumeClaim:
+            claimName: ollama-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: makeascene
+spec:
+  selector:
+    app: ollama
+  ports:
+    - port: 11434
+      targetPort: 11434

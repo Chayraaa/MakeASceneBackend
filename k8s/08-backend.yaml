@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: makeascene
+spec:
+  replicas: 2   # minimum — HPA (see 11-hpa.yaml) scales above this
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1         # bring up 1 extra pod before removing an old one
+      maxUnavailable: 0   # never drop below `replicas` ready pods — zero downtime
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # Replaces compose depends_on + healthcheck conditions.
+      # Each init container blocks startup until its target is ready.
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z db 5432; do
+                echo "Waiting for PostgreSQL..."; sleep 2
+              done
+              echo "PostgreSQL is up."
+
+        - name: wait-for-typesense
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -qO- http://typesense:8108/health > /dev/null 2>&1; do
+                echo "Waiting for Typesense..."; sleep 2
+              done
+              echo "Typesense is up."
+
+        - name: wait-for-minio
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -qO- http://minio:9000/minio/health/ready > /dev/null 2>&1; do
+                echo "Waiting for MinIO..."; sleep 2
+              done
+              echo "MinIO is up."
+
+      containers:
+        - name: backend
+          image: your-registry/makeascene-backend:latest  # ← set your image here
+          ports:
+            - containerPort: 5000
+          envFrom:
+            # All keys from the ConfigMap become env vars (BASE_URL, TYPESENSE_HOST, etc)
+            - configMapRef:
+                name: makeascene-config
+            # All keys from the Secret become env vars — includes
+            # SQLALCHEMY_DATABASE_URI, GOOGLE_CLIENT_ID/SECRET, JWT_SECRET,
+            # RESEND_API_KEY, TYPESENSE_API_KEY (mirrors secrets.env)
+            - secretRef:
+                name: makeascene-secrets
+          readinessProbe:
+            httpGet:
+              path: /health   # adjust to your actual health endpoint
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          # Required for the HPA to calculate CPU/memory utilization %.
+          # Sized for gunicorn -w 4 (4 worker processes per pod).
+          # Watch real usage with `kubectl top pods -n makeascene` and adjust.
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1500m"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: makeascene
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 5000
+      targetPort: 5000
+  # Change to LoadBalancer if you want a cloud load balancer directly,
+  # or use an Ingress (see 09-ingress.yaml).
+  type: ClusterIP

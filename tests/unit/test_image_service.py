@@ -33,6 +33,7 @@ def test_base64_to_binary_io():
     data = base64.b64encode(b"hello").decode()
     input_str = f"data:image/png;base64,{data}"
 
-    result = base64_to_binary_io(input_str)
+    mime, result = base64_to_binary_io(input_str)
 
+    assert mime == "image/png"
     assert result.read() == b"hello"

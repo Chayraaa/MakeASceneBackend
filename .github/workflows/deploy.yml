@@ -5,7 +5,7 @@ name: Build and Deploy
 on:
   push:
     branches:
-      - main
+      - deploy
 
 jobs:
   build-and-push:

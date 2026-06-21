@@ -1,6 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 
+class Role(Enum):
+    USER = 0
+    MODERATOR = 1
+    ADMIN = 2
 
 @dataclass
 class User:
@@ -12,4 +17,5 @@ class User:
     confirmed: bool = False
     mature: bool = True
     email_preference: bool = True
-    role: str = "user"
+    role: int = Role.USER
+

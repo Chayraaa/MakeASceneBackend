@@ -14,7 +14,7 @@ import os
 
 def _assemble_mail(token: str):
     # This should point to the frontend.
-    confirm_url = "/v1/auth/confirm-email?token="
+    confirm_url = "/v1/auth/email/confirm?token="
     base_url = os.environ.get("BASE_URL", "http://127.0.0.1:5000")
     confirm_mail_text = f"""
     <!DOCTYPE html>

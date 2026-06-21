@@ -10,6 +10,7 @@ class SqlSiteAccountRepo:
     def create_site_account(self, name: str, creator: User) -> bool:
         site_account_model = SiteAccountModel(name=name, creator_id=creator.id)
         self.session.add(site_account_model)
+        self.session.commit()
         return True
 
     def get_site_account_by_name(self, name: str) -> SiteAccount | None:

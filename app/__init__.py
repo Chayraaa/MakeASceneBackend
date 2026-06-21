@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import Enum
 from functools import wraps
 from time import sleep
 
@@ -13,12 +14,14 @@ from openapi_core.exceptions import OpenAPIError
 from openapi_core.validation.request.exceptions import InvalidRequestBody
 from openapi_core.validation.schemas.exceptions import InvalidSchemaValue
 
+from app.domain_models.user import Role
 from app.repositories.units_of_work.deploy_unit import DeployUnitOfWork
 from app.repositories.units_of_work.test_unit import TestUnitOfWork
 from app.services.auth_service import AuthService
 from app.services.image_service import ImageService
 from app.services.password_service import PasswordService
 from app.services.google_oauth_service import GoogleOauthService
+from app.services.site_account_service import SiteAccountService
 from app.services.tag_service import TagService
 from app.services.user_service import UserService
 from app.extensions import db, migrate
@@ -93,22 +96,24 @@ def setup_services(app: Flask):
     # When you, e.g., want to change from a database to a file-based storage, you would need to change the unit of work,
     # not the repositories defined for the services
     # storage_unit_of_work = SqlUnitOfWork()
-    storage_unit_of_work = TestUnitOfWork() if app.config["TESTING"] else DeployUnitOfWork()
+    unit_of_work = TestUnitOfWork() if app.config["TESTING"] else DeployUnitOfWork()
 
     app.password_service = PasswordService()
     # This is a user management service that you can give different implementations to
     # A service could also take another service as a dependency. Though make sure to prevent circular dependencies.
-    app.user_service = UserService(storage_unit_of_work.user_repo, storage_unit_of_work.email_repo,
-                                   storage_unit_of_work.confirm_token_repo)
-    app.auth_service = AuthService(storage_unit_of_work.user_repo, storage_unit_of_work.refresh_token_repo,
-                                   storage_unit_of_work.confirm_token_repo, storage_unit_of_work.email_repo,
-                                   storage_unit_of_work.password_reset_token_repo)
-    app.image_service = ImageService(storage_unit_of_work.image_storage,
+    app.user_service = UserService(unit_of_work.user_repo, unit_of_work.email_repo,
+                                   unit_of_work.confirm_token_repo)
+    app.auth_service = AuthService(unit_of_work.user_repo, unit_of_work.refresh_token_repo,
+                                   unit_of_work.confirm_token_repo, unit_of_work.email_repo,
+                                   unit_of_work.password_reset_token_repo)
+    app.image_service = ImageService(unit_of_work.image_storage,
                                      base_url=os.environ.get("BASE_URL", "http://127.0.0.1:5000"))
-    app.google_oauth_service = GoogleOauthService(storage_unit_of_work.user_repo,
-                                                  storage_unit_of_work.refresh_token_repo)
-    app.tag_service = TagService(storage_unit_of_work.tag_repo, storage_unit_of_work.saved_tag_repo,
-                                 storage_unit_of_work.blocked_tag_repo, storage_unit_of_work.tag_search_engine)
+    app.google_oauth_service = GoogleOauthService(unit_of_work.user_repo,
+                                                  unit_of_work.refresh_token_repo)
+    app.tag_service = TagService(unit_of_work.tag_repo, unit_of_work.saved_tag_repo,
+                                 unit_of_work.blocked_tag_repo, unit_of_work.tag_search_engine)
+    app.site_account_service = SiteAccountService(unit_of_work.site_account_repo,
+                                                  unit_of_work.user_repo, app.image_service)
 
 
 # Add all the routes here (see health as example)
@@ -123,42 +128,48 @@ def setup_routes(app: Flask):
     app.register_blueprint(auth, url_prefix="/v1/auth")
     from .routes.tag import tags
     app.register_blueprint(tags, url_prefix="/v1/tags")
+    from .routes.site_account import site_account
+    app.register_blueprint(site_account, url_prefix="/v1/site_accounts")
 
 
 ########################
 ########################
 
 # Login required decorator
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
+def login_required(role: Role = Role.USER):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
 
-        # Get the token from the Authorization header
-        token = request.headers.get("Authorization")
-        print(request.headers)
-        if not token:
-            return jsonify({"error": "Token missing"}), 401
+            # Get the token from the Authorization header
+            token = request.headers.get("Authorization")
+            print(request.headers)
+            if not token:
+                return jsonify({"error": "Token missing"}), 401
 
-        # Check if the token is in the correct format
-        parts = token.split()
-        if len(parts) != 2 or parts[0].lower() != "bearer":
-            return jsonify({"error": "Invalid Authorization header"}), 401
+            # Check if the token is in the correct format
+            parts = token.split()
+            if len(parts) != 2 or parts[0].lower() != "bearer":
+                return jsonify({"error": "Invalid Authorization header"}), 401
 
-        # Parsing and verification of the token
-        token = parts[1]
-        user_id = PasswordService.verify_token(token)
-        if not user_id:
-            return jsonify({"error": "Invalid or expired token"}), 401
+            # Parsing and verification of the token
+            token = parts[1]
+            user_id = PasswordService.verify_token(token)
+            if not user_id:
+                return jsonify({"error": "Invalid or expired token"}), 401
 
-        # Query the user from the database
-        user = current_app.user_service.get_user(user_id)
-        if not user:
-            return jsonify({"error": "User not found"}), 401
+            # Query the user from the database
+            user = current_app.user_service.get_user(user_id)
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+            if user.role < role.value:
+                return jsonify({"error": "Insufficient permissions"}), 401
 
-        # Return the user object to the route handler
-        return f(user=user, *args, **kwargs)
+            # Return the user object to the route handler
+            return f(user=user, *args, **kwargs)
 
-    return decorated
+        return decorated
+    return decorator
 
 
 # Validation decorator

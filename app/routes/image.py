@@ -10,6 +10,6 @@ def get_image(key):
     response = current_app.image_service.get_image_stream(key)
 
     return Response(
-        response[1],
-        mimetype=response[0]
+        response[0],
+        mimetype=response[1]
     )

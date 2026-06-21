@@ -13,6 +13,7 @@ tags:
   - name: Health
   - name: Search
   - name: Site Account
+  - name: Image
 paths:
   /users/me/tags/{id}:
     delete:
@@ -1203,7 +1204,8 @@ paths:
       deprecated: false
       description: Gets an image from the server
       operationId: getImage
-      tags: []
+      tags:
+        - Image
       parameters:
         - name: key
           in: path
@@ -1804,5 +1806,7 @@ components:
 servers:
   - url: http://127.0.0.1:5000/v1
     description: http://127.0.0.1:5000/v1
+  - url: https://api.makeascene.social/v1
+    description: Deploy
 security:
   - BearerAuth: []

@@ -25,7 +25,7 @@ def create_user():
 
 @users.route("/me", methods=["GET"])
 @validate
-@login_required
+@login_required()
 def info(user: User):
     return {
         "id": user.id,
@@ -37,7 +37,7 @@ def info(user: User):
 
 @users.route("/me", methods=["PATCH"])
 @validate
-@login_required
+@login_required()
 def update(user: User):
     data = request.get_json()
 
@@ -59,7 +59,7 @@ def update(user: User):
 
 @users.route("/me", methods=["DELETE"])
 @validate
-@login_required
+@login_required()
 def delete(user: User):
     if current_app.user_service.delete_user(user):
         return {"message": "Deletion was successful"}, 200
@@ -68,7 +68,7 @@ def delete(user: User):
 
 @users.route("/me/tags", methods=["GET"])
 @validate
-@login_required
+@login_required()
 def get_saved_tags(user: User):
     page = request.args.get("page", 1, type=int)
     size = request.args.get("page_size", 25, type=int)
@@ -82,7 +82,7 @@ def get_saved_tags(user: User):
 
 @users.route("/me/tags/<int:id>", methods=["POST"])
 @validate
-@login_required
+@login_required()
 def subscribe_to_tag(user: User, id: int):
     if current_app.tag_service.save_tag(user, Tag(id=id, name="")):
         return {"message": "Tag saved."}, 200
@@ -91,7 +91,7 @@ def subscribe_to_tag(user: User, id: int):
 
 @users.route("/me/tags/<int:id>", methods=["DELETE"])
 @validate
-@login_required
+@login_required()
 def unsubscribe_tag(user: User, id: int):
     if current_app.tag_service.unsave_tag(user, Tag(id=id, name="")):
         return {"message": "Tag removed."}, 200
@@ -100,7 +100,7 @@ def unsubscribe_tag(user: User, id: int):
 
 @users.route("/me/tags/block", methods=["GET"])
 @validate
-@login_required
+@login_required()
 def get_blocked_tags(user: User):
     page = request.args.get("page", 1, type=int)
     size = request.args.get("page_size", 25, type=int)
@@ -114,7 +114,7 @@ def get_blocked_tags(user: User):
 
 @users.route("/me/tags/block/<int:id>", methods=["POST"])
 @validate
-@login_required
+@login_required()
 def block_tag(user: User, id: int):
     if current_app.tag_service.block_tag(user, Tag(id=id, name="")):
         return {"message": "Tag blocked."}, 200
@@ -123,7 +123,7 @@ def block_tag(user: User, id: int):
 
 @users.route("/me/tags/block/<int:id>", methods=["DELETE"])
 @validate
-@login_required
+@login_required()
 def unblock_tag(user: User, id: int):
     if current_app.tag_service.unblock_tag(user, Tag(id=id, name="")):
         return {"message": "Tag unblocked."}, 200

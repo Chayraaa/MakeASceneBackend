@@ -1,0 +1,16 @@
+# Mirrors your actual normal.env. SQLALCHEMY_DATABASE_URI is NOT here —
+# it embeds the db password, so it lives in 02-secrets.yaml instead.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: makeascene-config
+  namespace: makeascene
+data:
+  # Was http://127.0.0.1:5000 in compose — that only worked because
+  # everything ran on one host. In the cluster this needs to be the
+  # public URL your app is actually reachable at (used for OAuth
+  # redirect URIs, links in emails sent via Resend, etc).
+  BASE_URL: "https://api.makeascene.social"   # ← set to your real Ingress domain
+
+  TYPESENSE_HOST: "typesense"
+  TYPESENSE_DATA_DIR: "/data"

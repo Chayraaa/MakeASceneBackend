@@ -19,6 +19,7 @@ class UserModel(db.Model):
     confirmed: Mapped[bool] = mapped_column(nullable=False, default=False)
     mature: Mapped[bool] = mapped_column(nullable=False, default=True)
     email_preference: Mapped[bool] = mapped_column(nullable=False, default=True)
+    role: Mapped[int] = mapped_column(nullable=False, default=0)
     created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     # Auth
@@ -38,3 +39,5 @@ class UserModel(db.Model):
     blocked_tags = relationship(
         "BlockedTagModel", back_populates="user", cascade="all, delete-orphan"
     )
+    # Site accounts
+    site_accounts = relationship("SiteAccountModel", back_populates="creator")

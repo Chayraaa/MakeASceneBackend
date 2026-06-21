@@ -38,7 +38,7 @@ def login():
 
 @auth.route("/logout", methods=["POST"])
 @validate
-@login_required
+@login_required()
 def logout(user: User):
     if current_app.auth_service.logout(user):
         return {"message": "Logout successful."}, 200

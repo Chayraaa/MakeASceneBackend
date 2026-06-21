@@ -1,0 +1,45 @@
+# Run this Job before rolling out a new backend image.
+# It uses the same image + env/secrets as the backend, but overrides
+# the command to run the migration instead of starting the server.
+#
+# Job names must be unique per run (Jobs are immutable), so the
+# CI pipeline substitutes a unique name (e.g. using the commit SHA)
+# before applying this.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: backend-migrate-REPLACE_ME   # CI replaces REPLACE_ME with the git SHA
+  namespace: makeascene
+spec:
+  backoffLimit: 2          # retry twice on failure, then give up
+  ttlSecondsAfterFinished: 3600   # auto-cleanup 1hr after completion
+  template:
+    spec:
+      restartPolicy: Never
+      # Same dependency wait as the backend — don't try to migrate
+      # before postgres is reachable.
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z db 5432; do
+                echo "Waiting for PostgreSQL..."; sleep 2
+              done
+      containers:
+        - name: migrate
+          image: your-registry/makeascene-backend:latest   # CI replaces tag
+          command: ["flask", "db", "upgrade"]
+          envFrom:
+            - configMapRef:
+                name: makeascene-config
+            - secretRef:
+                name: makeascene-secrets
+          env:
+            # run.py does `app = create_app()` at module level, so Flask's
+            # CLI just needs to import that module — no factory call syntax needed.
+            - name: FLASK_APP
+              value: "run.py"

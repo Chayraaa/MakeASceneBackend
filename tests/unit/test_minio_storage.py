@@ -25,14 +25,16 @@ def test_save_image_calls_put_object():
 
         image_data = BytesIO(b"image-data")
 
-        result = storage.save_image("key123", image_data)
+        result = storage.save_image("key123", image_data, "image/png")
 
         mock_client.put_object.assert_called_once()
         assert result == "key123"
 
+
 def test_get_image_reads_and_closes():
     mock_response = MagicMock()
     mock_response.read.return_value = b"file-data"
+    mock_response.headers.get.return_value = "image/png"
 
     mock_client = MagicMock()
     mock_client.get_object.return_value = mock_response
@@ -40,9 +42,10 @@ def test_get_image_reads_and_closes():
     with patch("app.repositories.storage.image.minio_image_storage.Minio", return_value=mock_client):
         storage = MinioImageStorage(bucket="test-bucket")
 
-        result = storage.get_image("key123")
+        data, mime = storage.get_image("key123")
 
-        assert result == b"file-data"
+        assert data == b"file-data"
+        assert mime == "image/png"
 
         mock_client.get_object.assert_called_once_with("test-bucket", "key123")
         mock_response.close.assert_called_once()

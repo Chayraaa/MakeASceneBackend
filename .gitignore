@@ -18,3 +18,4 @@ __pycache__/
 /.idea/makeASceneBackend.iml
 /.coverage
 /tests/.coverage
+/k8s/02-secrets.yaml

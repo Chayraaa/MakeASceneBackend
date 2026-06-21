@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: typesense
+  namespace: makeascene
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: typesense
+  template:
+    metadata:
+      labels:
+        app: typesense
+    spec:
+      containers:
+        - name: typesense
+          image: ghcr.io/batonogov/typesense:latest
+          ports:
+            - containerPort: 8108
+          env:
+            - name: TYPESENSE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: makeascene-secrets
+                  key: TYPESENSE_API_KEY
+            - name: TYPESENSE_DATA_DIR
+              value: /data
+          # Add any other keys from your normal.env / secrets.env that
+          # the typesense image needs here.
+          volumeMounts:
+            - name: typesense-storage
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8108
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8108
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: typesense-storage
+          persistentVolumeClaim:
+            claimName: typesense-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: typesense
+  namespace: makeascene
+spec:
+  selector:
+    app: typesense
+  ports:
+    - port: 8108
+      targetPort: 8108

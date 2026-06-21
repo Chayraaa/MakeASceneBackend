@@ -961,7 +961,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
-  /site-accounts:
+  /site_accounts:
     post:
       summary: Create site account
       deprecated: false
@@ -996,7 +996,7 @@ paths:
           description: ''
       security:
         - BearerAuth: []
-  /site-accounts/{id}:
+  /site_accounts/{id}:
     get:
       summary: Get site account info
       deprecated: false
@@ -1042,7 +1042,7 @@ paths:
           description: ''
           required: true
           schema:
-            type: string
+            type: integer
       requestBody:
         content:
           application/json:
@@ -1085,7 +1085,7 @@ paths:
           description: ''
           required: true
           schema:
-            type: string
+            type: integer
       responses:
         '200':
           description: ''
@@ -1108,6 +1108,125 @@ paths:
           description: ''
       security:
         - BearerAuth: []
+  /site_accounts/apply:
+    post:
+      summary: Apply for site account
+      deprecated: false
+      description: Used to apply for a site account
+      operationId: applySiteAccount
+      tags:
+        - Site Account
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyForSiteAccountRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - Request sent
+                required:
+                  - message
+          headers: {}
+      security:
+        - BearerAuth: []
+  /site-accounts:
+    get:
+      summary: Query site accounts
+      deprecated: false
+      description: Queries all existing site accounts.
+      operationId: querySiteAccount
+      tags:
+        - Site Account
+        - Search
+      parameters:
+        - name: q
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+        - name: page-size
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteAccount'
+              example: >
+                <!doctype html>
+
+                <html lang=en>
+
+                <title>404 Not Found</title>
+
+                <h1>Not Found</h1>
+
+                <p>The requested URL was not found on the server. If you entered
+                the URL manually please check your spelling and try again.</p>
+          headers: {}
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /image/{key}:
+    get:
+      summary: Get image
+      deprecated: false
+      description: Gets an image from the server
+      operationId: getImage
+      tags: []
+      parameters:
+        - name: key
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+      security: []
 webhooks: {}
 components:
   schemas:
@@ -1377,22 +1496,111 @@ components:
       required:
         - id
         - name
+    SiteAccountTextLayout:
+      type: object
+      properties:
+        component_type:
+          type: string
+          enum:
+            - text
+            - image
+            - events
+            - combined
+        text:
+          type: string
+      required:
+        - text
+        - component_type
+    SiteAccountImageLayout:
+      type: object
+      properties:
+        component_type:
+          type: string
+          enum:
+            - text
+            - image
+            - events
+            - combined
+        image:
+          type: string
+      required:
+        - image
+        - component_type
+    SiteAccountEventsLayout:
+      type: object
+      properties:
+        sorting:
+          type: string
+        component_type:
+          type: string
+          enum:
+            - text
+            - image
+            - events
+            - combined
+      required:
+        - sorting
+        - component_type
+    SiteAccountCombinedLayout:
+      type: object
+      properties:
+        combined:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/SiteAccountTextLayout'
+              - $ref: '#/components/schemas/SiteAccountImageLayout'
+              - $ref: '#/components/schemas/SiteAccountEventsLayout'
+              - $ref: '#/components/schemas/SiteAccountCombinedLayout'
+        component_type:
+          type: string
+          enum:
+            - text
+            - image
+            - events
+            - combined
+      required:
+        - combined
+        - component_type
     SiteAccount:
       type: object
       properties:
         id:
           type: integer
           description: ID
+        creator_id:
+          type: integer
         name:
           type: string
           description: name
           examples:
             - Test Organizer
-        creator_id:
-          type: integer
+        layout:
+          type: array
+          items:
+            type: object
+            properties:
+              component_type:
+                type: string
+                enum:
+                  - text
+                  - image
+                  - events
+                  - combined
+              data:
+                oneOf:
+                  - $ref: '#/components/schemas/SiteAccountTextLayout'
+                  - $ref: '#/components/schemas/SiteAccountImageLayout'
+                  - $ref: '#/components/schemas/SiteAccountEventsLayout'
+                  - $ref: '#/components/schemas/SiteAccountCombinedLayout'
+              layout_variant:
+                type: integer
+            required:
+              - layout_variant
+              - data
+              - component_type
       required:
         - id
-        - name
         - creator_id
     CreateSiteAccount:
       type: object
@@ -1424,8 +1632,58 @@ components:
           description: name
           examples:
             - Test Organizer
+        layout:
+          type: array
+          items:
+            type: object
+            properties:
+              component_type:
+                type: string
+                enum:
+                  - text
+                  - image
+                  - events
+                  - combined
+              data:
+                oneOf:
+                  - $ref: '#/components/schemas/SiteAccountTextLayout'
+                  - $ref: '#/components/schemas/SiteAccountImageLayout'
+                  - $ref: '#/components/schemas/SiteAccountEventsLayout'
+                  - $ref: '#/components/schemas/SiteAccountCombinedLayout'
+              layout_variant:
+                type: integer
+            required:
+              - layout_variant
+              - data
+              - component_type
+    ApplyForSiteAccountRequest:
+      type: object
+      properties:
+        artist_name:
+          type: string
+          description: name
+          examples:
+            - Max mustermann
+        account_name:
+          type: string
+        reason:
+          type: string
+          examples:
+            - I want cool event
+        sources:
+          type: string
+          examples:
+            - https://some.website.de
+        contact:
+          type: string
+          examples:
+            - +12 345 67890
       required:
-        - name
+        - artist_name
+        - reason
+        - sources
+        - contact
+        - account_name
   responses:
     Unauthorized:
       description: Authentication failed

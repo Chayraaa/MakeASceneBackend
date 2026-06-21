@@ -22,7 +22,8 @@ class SqlUserRepo:
             confirmed=db_user.confirmed,
             created_at=db_user.created_at,
             mature=db_user.mature,
-            email_preference=db_user.email_preference
+            email_preference=db_user.email_preference,
+            role=db_user.role
         )
 
     def get_user_by_email(self, email: str) -> User | None:
@@ -37,7 +38,8 @@ class SqlUserRepo:
             confirmed=db_user.confirmed,
             created_at=db_user.created_at,
             mature=db_user.mature,
-            email_preference=db_user.email_preference
+            email_preference=db_user.email_preference,
+            role=db_user.role
         )
 
     def create_user(self, email: str, password: str, oauth="local") -> bool:
@@ -57,6 +59,7 @@ class SqlUserRepo:
         db_user.created_at = user.created_at
         db_user.mature = user.mature
         db_user.email_preference = user.email_preference
+        db_user.role = user.role
         self.session.commit()
         return True
 

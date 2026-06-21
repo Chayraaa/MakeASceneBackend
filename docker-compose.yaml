@@ -41,9 +41,10 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio_password
+    env_file:
+      - normal.env
+      - secrets.env
+
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data

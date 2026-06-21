@@ -1808,5 +1808,7 @@ servers:
     description: http://127.0.0.1:5000/v1
   - url: https://api.makeascene.social/v1
     description: Deploy
+  - url: http://api.makeascene.social/v1
+    description: Deploy-http
 security:
   - BearerAuth: []

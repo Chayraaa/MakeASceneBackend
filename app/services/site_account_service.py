@@ -81,8 +81,8 @@ class SiteAccountService:
         application.artist_name = artist_name if artist_name else application.artist_name
         application.account_name = account_name if account_name else application.account_name
         application.reason = reason if reason else application.reason
-        application.sources = sources if sources else application.sources
-        application.contacts = contact if contact else application.contacts
+        application.sources = sources if sources is not None else application.sources
+        application.contacts = contact if contact is not None else application.contacts
         return self.application_repo.update_application(application)
 
     def query_site_accounts(self, query: str, page: int = 1):

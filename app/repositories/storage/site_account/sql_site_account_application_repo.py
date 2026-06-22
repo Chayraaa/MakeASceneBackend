@@ -63,6 +63,9 @@ class SqlSiteAccountApplicationRepo:
         return True
 
     def delete_application(self, application: SiteAccountApplication) -> bool:
-        self.session.delete(self.session.get(SiteAccountApplicationModel, application.id))
+        model = self.session.get(SiteAccountApplicationModel, application.id)
+        if not model:
+            return False
+        self.session.delete(model)
         self.session.commit()
         return True

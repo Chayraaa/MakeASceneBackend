@@ -1,0 +1,19 @@
+from typing import Protocol
+
+from app.domain_models.site_account.SiteAccountApplication import SiteAccountApplication
+from app.domain_models.user import User
+
+
+class SiteAccountApplicationRepoProtocol(Protocol):
+    def __init__(self, session): ...
+
+    def create_application(self, requestor: User, artist_name: str, account_name: str, reason: str, sources: list[str],
+                           contacts: list[str]) -> bool: ...
+
+    def get_application_by_id(self, application_id: int) -> SiteAccountApplication | None: ...
+
+    def get_applications(self, page: int, page_size: int) -> list[SiteAccountApplication]: ...
+
+    def update_application(self, application: SiteAccountApplication) -> bool: ...
+
+    def delete_application(self, application: SiteAccountApplication) -> bool: ...

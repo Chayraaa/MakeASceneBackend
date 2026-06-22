@@ -1,6 +1,6 @@
 from app.domain_models.tags.tag import Tag
 from app.domain_models.user import User
-from app.repositories.interfaces.external.search_engine_protocol import SearchEngineTagProtocol
+from app.repositories.interfaces.external.search_engine_tag_protocol import SearchEngineTagProtocol
 from app.repositories.interfaces.storage.tags.blocked_tag_repo_protocol import BlockedTagRepoProtocol
 from app.repositories.interfaces.storage.tags.saved_tag_repo_protocol import SavedTagRepoProtocol
 from app.repositories.interfaces.storage.tags.tag_repo_protocol import TagRepoProtocol

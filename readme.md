@@ -91,7 +91,11 @@ The whole backend, for example, never was part of the requirements.
 This project may be part of a bachelor's thesis at Hof University of Applied Sciences in the future.
 
 ---
+## AI Disclaimer
+Yes, some of the code (especially for deployment) is AI-generated. I am not an expert in everything, so please forgive me.
+If there is someone willing to update/help with this, you are more than welcome!
 
+---
 ## License
 
 TBD

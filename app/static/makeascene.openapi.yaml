@@ -13,6 +13,7 @@ tags:
   - name: Health
   - name: Search
   - name: Site Account
+  - name: Application
   - name: Image
 paths:
   /users/me/tags/{id}:
@@ -962,6 +963,189 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
+  /site_accounts/application:
+    post:
+      summary: Apply for site account
+      deprecated: false
+      description: Used to apply for a site account
+      operationId: applySiteAccount
+      tags:
+        - Site Account
+        - Application
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyForSiteAccountRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - Request sent
+                required:
+                  - message
+          headers: {}
+      security:
+        - BearerAuth: []
+    get:
+      summary: Get applications
+      deprecated: false
+      description: Gets all applications
+      operationId: getApplications
+      tags:
+        - Site Account
+        - Application
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteAccountApplication'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+      security:
+        - BearerAuth: []
+  /site_accounts/application/{id}:
+    get:
+      summary: Get Application
+      deprecated: false
+      description: Gets one application
+      operationId: getApplication
+      tags:
+        - Site Account
+        - Application
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccountApplication'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Delete Application
+      deprecated: false
+      description: Deletes an Application
+      operationId: deleteApplication
+      tags:
+        - Site Account
+        - Application
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccountResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+      security:
+        - BearerAuth: []
+    patch:
+      summary: Change Application
+      deprecated: false
+      description: Modifies an existing application
+      operationId: changeApplication
+      tags:
+        - Site Account
+        - Application
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeSiteAccountRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - Request sent
+                required:
+                  - message
+          headers: {}
+      security:
+        - BearerAuth: []
   /site_accounts:
     post:
       summary: Create site account
@@ -997,6 +1181,55 @@ paths:
           description: ''
       security:
         - BearerAuth: []
+    get:
+      summary: Query site accounts
+      deprecated: false
+      description: Queries all existing site accounts.
+      operationId: querySiteAccount
+      tags:
+        - Site Account
+        - Search
+      parameters:
+        - name: q
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteAccount'
+              example: >
+                <!doctype html>
+
+                <html lang=en>
+
+                <title>404 Not Found</title>
+
+                <h1>Not Found</h1>
+
+                <p>The requested URL was not found on the server. If you entered
+                the URL manually please check your spelling and try again.</p>
+          headers: {}
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
   /site_accounts/{id}:
     get:
       summary: Get site account info
@@ -1109,95 +1342,6 @@ paths:
           description: ''
       security:
         - BearerAuth: []
-  /site_accounts/apply:
-    post:
-      summary: Apply for site account
-      deprecated: false
-      description: Used to apply for a site account
-      operationId: applySiteAccount
-      tags:
-        - Site Account
-      parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ApplyForSiteAccountRequest'
-            examples: {}
-        required: true
-      responses:
-        '200':
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    examples:
-                      - Request sent
-                required:
-                  - message
-          headers: {}
-      security:
-        - BearerAuth: []
-  /site-accounts:
-    get:
-      summary: Query site accounts
-      deprecated: false
-      description: Queries all existing site accounts.
-      operationId: querySiteAccount
-      tags:
-        - Site Account
-        - Search
-      parameters:
-        - name: q
-          in: query
-          description: ''
-          required: true
-          schema:
-            type: string
-        - name: page
-          in: query
-          description: ''
-          required: false
-          schema:
-            type: integer
-        - name: page-size
-          in: query
-          description: ''
-          required: false
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/SiteAccount'
-              example: >
-                <!doctype html>
-
-                <html lang=en>
-
-                <title>404 Not Found</title>
-
-                <h1>Not Found</h1>
-
-                <p>The requested URL was not found on the server. If you entered
-                the URL manually please check your spelling and try again.</p>
-          headers: {}
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
-          description: Validation error – one or more fields failed validation
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-          description: ''
-      security: []
   /image/{key}:
     get:
       summary: Get image
@@ -1673,19 +1817,73 @@ components:
           examples:
             - I want cool event
         sources:
-          type: string
-          examples:
-            - https://some.website.de
+          type: array
+          items:
+            type: string
         contact:
-          type: string
-          examples:
-            - +12 345 67890
+          type: array
+          items:
+            type: string
       required:
         - artist_name
         - reason
         - sources
         - contact
         - account_name
+    SiteAccountApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: id
+        artist_name:
+          type: string
+          description: name
+          examples:
+            - Max mustermann
+        account_name:
+          type: string
+        reason:
+          type: string
+          examples:
+            - I want cool event
+        sources:
+          type: array
+          items:
+            type: string
+        contact:
+          type: array
+          items:
+            type: string
+      required:
+        - artist_name
+        - reason
+        - sources
+        - contact
+        - account_name
+        - id
+    ChangeSiteAccountRequest:
+      type: object
+      properties:
+        artist_name:
+          type: string
+          description: name
+          examples:
+            - Max mustermann
+        account_name:
+          type: string
+        reason:
+          type: string
+          examples:
+            - I want cool event
+        sources:
+          type: array
+          items:
+            type: string
+        contact:
+          type: array
+          items:
+            type: string
   responses:
     Unauthorized:
       description: Authentication failed

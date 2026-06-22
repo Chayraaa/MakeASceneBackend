@@ -41,3 +41,6 @@ class UserModel(db.Model):
     )
     # Site accounts
     site_accounts = relationship("SiteAccountModel", back_populates="creator")
+    site_account_applications = relationship(
+        "SiteAccountApplicationModel", back_populates="requestor", cascade="all, delete-orphan"
+    )

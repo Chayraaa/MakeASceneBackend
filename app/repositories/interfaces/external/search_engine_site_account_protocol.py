@@ -1,0 +1,16 @@
+from typing import Protocol
+
+from app.domain_models.site_account.SiteAccount import SiteAccount
+from app.repositories.external.search_engine.typesense_site_account_search_repo import SiteAccountSearchResult
+
+
+class SearchEngineSiteAccountProtocol(Protocol):
+    def __init__(self, client): ...
+
+    def add_site_account(self, site_account: SiteAccount) -> bool: ...
+
+    def update_site_account(self, site_account: SiteAccount) -> bool: ...
+
+    def remove_site_account(self, site_account: SiteAccount) -> bool: ...
+
+    def search_by_semantic(self, query: str, page: int) -> list[SiteAccountSearchResult]: ...

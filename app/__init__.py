@@ -38,6 +38,9 @@ from app.database_models.tags.tag_model import TagModel
 from app.database_models.tags.saved_tags_model import SavedTagModel
 from app.database_models.tags.blocked_tags_model import BlockedTagModel
 from app.database_models.site_account.site_account_model import SiteAccountModel
+from app.database_models.site_account.site_account_application_model import SiteAccountApplicationModel
+from app.database_models.site_account.site_account_application_contact_model import SiteAccountApplicationContactModel
+from app.database_models.site_account.site_account_application_sources_model import SiteAccountApplicationSourcesModel
 
 # Open API file path
 open_api_file_name = "makeascene.openapi.yaml"
@@ -113,7 +116,7 @@ def setup_services(app: Flask):
     app.tag_service = TagService(unit_of_work.tag_repo, unit_of_work.saved_tag_repo,
                                  unit_of_work.blocked_tag_repo, unit_of_work.tag_search_engine)
     app.site_account_service = SiteAccountService(unit_of_work.site_account_repo,
-                                                  unit_of_work.user_repo, app.image_service)
+                                                  unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo)
 
 
 # Add all the routes here (see health as example)
@@ -169,6 +172,7 @@ def login_required(role: Role = Role.USER):
             return f(user=user, *args, **kwargs)
 
         return decorated
+
     return decorator
 
 

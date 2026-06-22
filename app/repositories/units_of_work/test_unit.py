@@ -1,11 +1,15 @@
 from app.extensions import db
 from app.repositories.external.resend_email_repo import ResendEmailRepo
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
-from app.repositories.interfaces.external.search_engine_protocol import SearchEngineTagProtocol
+
+from app.repositories.interfaces.external.search_engine_site_account_protocol import SearchEngineSiteAccountProtocol
+from app.repositories.interfaces.external.search_engine_tag_protocol import SearchEngineTagProtocol
 from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
 from app.repositories.interfaces.storage.image_storage_protocol import ImageStorageProtocol
 from app.repositories.interfaces.storage.auth.password_reset_token_repo_protocol import PasswordResetTokenRepoProtocol
 from app.repositories.interfaces.storage.auth.refresh_token_repo_protocol import RefreshTokenRepoProtocol
+from app.repositories.interfaces.storage.site_account.site_account_application_repo_protocol import \
+    SiteAccountApplicationRepoProtocol
 from app.repositories.interfaces.storage.site_account.site_account_repo_protocol import SiteAccountRepoProtocol
 from app.repositories.interfaces.storage.tags.blocked_tag_repo_protocol import BlockedTagRepoProtocol
 from app.repositories.interfaces.storage.tags.saved_tag_repo_protocol import SavedTagRepoProtocol
@@ -15,6 +19,7 @@ from app.repositories.storage.image.mem_image_storage import InMemoryImageStorag
 from app.repositories.storage.auth.sql_confirm_token_repo import SqlConfirmTokenRepo
 from app.repositories.storage.auth.sql_password_reset_token_repo import SqlPasswordResetTokenRepo
 from app.repositories.storage.auth.sql_refresh_token_repo import SqlRefreshTokenRepo
+from app.repositories.storage.site_account.sql_site_account_application_repo import SqlSiteAccountApplicationRepo
 from app.repositories.storage.site_account.sql_site_account_repo import SqlSiteAccountRepo
 from app.repositories.storage.sql_user_repo import SqlUserRepo
 from app.repositories.storage.tags.sql_blocked_tag_repo import SqlBlockedTagRepo
@@ -38,4 +43,7 @@ class TestUnitOfWork:
         self.saved_tag_repo: SavedTagRepoProtocol = SqlSavedTagRepo(db.session)
         self.blocked_tag_repo: BlockedTagRepoProtocol = SqlBlockedTagRepo(db.session)
         self.tag_search_engine: SearchEngineTagProtocol = None
+        self.site_account_search_engine: SearchEngineSiteAccountProtocol = None
         self.site_account_repo: SiteAccountRepoProtocol = SqlSiteAccountRepo(db.session)
+        self.site_account_application_repo: SiteAccountApplicationRepoProtocol = SqlSiteAccountApplicationRepo(
+            db.session)

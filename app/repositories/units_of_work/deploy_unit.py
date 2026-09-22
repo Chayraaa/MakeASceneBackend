@@ -17,7 +17,7 @@ from app.repositories.interfaces.storage.tags.blocked_tag_repo_protocol import B
 from app.repositories.interfaces.storage.tags.saved_tag_repo_protocol import SavedTagRepoProtocol
 from app.repositories.interfaces.storage.tags.tag_repo_protocol import TagRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
-from app.repositories.storage.image.minio_image_storage import MinioImageStorage
+from app.repositories.storage.image.s3_image_storage import S3ImageStorage
 from app.repositories.storage.auth.sql_confirm_token_repo import SqlConfirmTokenRepo
 from app.repositories.storage.auth.sql_password_reset_token_repo import SqlPasswordResetTokenRepo
 from app.repositories.storage.auth.sql_refresh_token_repo import SqlRefreshTokenRepo
@@ -35,7 +35,7 @@ from app.repositories.storage.tags.sql_tag_repo import SqlTagRepo
 class DeployUnitOfWork:
     def __init__(self):
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)
-        self.image_storage: ImageStorageProtocol = MinioImageStorage("images")
+        self.image_storage: ImageStorageProtocol = S3ImageStorage("images")
         self.refresh_token_repo: RefreshTokenRepoProtocol = SqlRefreshTokenRepo(db.session)
         self.email_repo: EmailProtocol = ResendEmailRepo()
         self.confirm_token_repo: ConfirmTokenRepoProtocol = SqlConfirmTokenRepo(db.session)

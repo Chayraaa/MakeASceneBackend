@@ -43,17 +43,6 @@ spec:
               done
               echo "Typesense is up."
 
-        - name: wait-for-minio
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              until wget -qO- http://minio:9000/minio/health/ready > /dev/null 2>&1; do
-                echo "Waiting for MinIO..."; sleep 2
-              done
-              echo "MinIO is up."
-
       containers:
         - name: backend
           image: ghcr.io/chayraaa/makeascene-backend:latest

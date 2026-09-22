@@ -5,13 +5,13 @@ import os
 from minio import Minio, S3Error
 
 
-class MinioImageStorage:
+class S3ImageStorage:
     def __init__(self, bucket: str):
         self.client = Minio(
-            endpoint="minio:9000",
-            access_key=os.environ.get("MINIO_ROOT_USER"),
-            secret_key=os.environ.get("MINIO_ROOT_PASSWORD"),
-            secure=False
+            endpoint=os.environ.get("S3_ENDPOINT", ""),
+            access_key=os.environ.get("S3_ACCESS_KEY"),
+            secret_key=os.environ.get("S3_SECRET_KEY"),
+            secure=os.environ.get("S3_SECURE") == "True"
         )
 
         self.bucket = bucket

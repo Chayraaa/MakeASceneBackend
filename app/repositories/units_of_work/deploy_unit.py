@@ -1,3 +1,5 @@
+import os
+
 from app.extensions import db, typesense_client
 from app.repositories.external.resend_email_repo import ResendEmailRepo
 from app.repositories.external.search_engine.typesense_site_account_search_repo import TypesenseSiteAccountSearchRepo
@@ -35,7 +37,7 @@ from app.repositories.storage.tags.sql_tag_repo import SqlTagRepo
 class DeployUnitOfWork:
     def __init__(self):
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)
-        self.image_storage: ImageStorageProtocol = S3ImageStorage("images")
+        self.image_storage: ImageStorageProtocol = S3ImageStorage(os.environ.get("S3_BUCKET_NAME", "images"))
         self.refresh_token_repo: RefreshTokenRepoProtocol = SqlRefreshTokenRepo(db.session)
         self.email_repo: EmailProtocol = ResendEmailRepo()
         self.confirm_token_repo: ConfirmTokenRepoProtocol = SqlConfirmTokenRepo(db.session)

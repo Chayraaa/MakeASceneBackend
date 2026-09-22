@@ -61,6 +61,7 @@ def update_site_account(user: User, id: int):
     return {"message": "Failed to update site account."}, 500
 
 
+
 @site_account.route("/<int:id>", methods=["DELETE"])
 @login_required(role=Role.USER)
 @validate
@@ -68,6 +69,11 @@ def delete_site_account(user: User, id: int):
     account = current_app.site_account_service.get_site_account_by_id(id)
     if not account:
         return {"message": "Site account not found."}, 404
+    if not (
+            current_app.site_account_service.has_authority(user, account)
+            or user.role >= Role.MODERATOR.value
+    ):
+        return {"message": "You do not have permission to delete this site account."}, 401
     if current_app.site_account_service.delete_site_account(account):
         return {"message": "Site account deleted."}, 200
     return {"message": "Failed to delete site account."}, 500

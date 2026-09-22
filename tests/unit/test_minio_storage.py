@@ -1,16 +1,16 @@
 from unittest.mock import MagicMock, patch
 from io import BytesIO
-from app.repositories.storage.image.minio_image_storage import MinioImageStorage
+from app.repositories.storage.image.s3_image_storage import S3ImageStorage
 
 def test_bucket_created_if_not_exists():
     mock_client = MagicMock()
     mock_client.bucket_exists.return_value = False
 
     with patch(
-        "app.repositories.storage.image.minio_image_storage.Minio",
+        "app.repositories.storage.image.s3_image_storage.Minio",
         return_value=mock_client
     ):
-        storage = MinioImageStorage(bucket="test-bucket")
+        storage = S3ImageStorage(bucket="test-bucket")
 
         storage._ensure_bucket()
 
@@ -20,8 +20,8 @@ def test_bucket_created_if_not_exists():
 def test_save_image_calls_put_object():
     mock_client = MagicMock()
 
-    with patch("app.repositories.storage.image.minio_image_storage.Minio", return_value=mock_client):
-        storage = MinioImageStorage(bucket="test-bucket")
+    with patch("app.repositories.storage.image.s3_image_storage.Minio", return_value=mock_client):
+        storage = S3ImageStorage(bucket="test-bucket")
 
         image_data = BytesIO(b"image-data")
 
@@ -39,8 +39,8 @@ def test_get_image_reads_and_closes():
     mock_client = MagicMock()
     mock_client.get_object.return_value = mock_response
 
-    with patch("app.repositories.storage.image.minio_image_storage.Minio", return_value=mock_client):
-        storage = MinioImageStorage(bucket="test-bucket")
+    with patch("app.repositories.storage.image.s3_image_storage.Minio", return_value=mock_client):
+        storage = S3ImageStorage(bucket="test-bucket")
 
         data, mime = storage.get_image("key123")
 

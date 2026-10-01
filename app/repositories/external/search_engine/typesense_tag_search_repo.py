@@ -5,6 +5,7 @@ import threading
 
 from app.helper.llm.expansion_worker import ExpansionWorker
 from app.helper.llm.tag_expander import TagExpander
+from app.metrics import tag_metrics
 
 _lock = threading.Lock()
 _initialized = False
@@ -87,6 +88,7 @@ class TypesenseTagSearchRepo:
             return True
         except Exception as e:
             print("remove_tag failed:", e)
+            tag_metrics.tag_search_errors.labels(search_type='remove').inc()
             return False
 
     def search_by_semantic(self, query: str, page: int) -> list[Tag]:
@@ -113,6 +115,7 @@ class TypesenseTagSearchRepo:
             return tags
         except Exception as e:
             print("[Tag search] search failed:", e)
+            tag_metrics.tag_search_errors.labels(search_type='semantic').inc()
             return []
 
     def _stem(self, query: str) -> str:
@@ -163,6 +166,7 @@ class TypesenseTagSearchRepo:
 
         except Exception as e:
             print(f"[Tag Search] Lookup failed: {e}")
+            tag_metrics.tag_search_errors.labels(search_type='embedding_lookup').inc()
 
         try:
             result = self.client.collections["tags"].documents.search({
@@ -186,4 +190,5 @@ class TypesenseTagSearchRepo:
 
         except Exception as e:
             print("search_for_tag failed:", e)
+            tag_metrics.tag_search_errors.labels(search_type='embedding').inc()
             return []

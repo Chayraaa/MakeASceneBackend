@@ -1,6 +1,14 @@
 import logging
 import os
 from enum import Enum
+
+# Must happen before any prometheus_client metric is instantiated (i.e. before
+# any metrics module is imported). prometheus_client switches to multiprocess
+# mode as soon as PROMETHEUS_MULTIPROC_DIR is set, and immediately tries to
+# open .db files in that directory — so the directory must already exist.
+_multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_multiproc")
+os.makedirs(_multiproc_dir, exist_ok=True)
+os.environ["PROMETHEUS_MULTIPROC_DIR"] = _multiproc_dir
 from functools import wraps
 from time import sleep
 
@@ -81,7 +89,7 @@ def setup_oauth(app: Flask):
 
 def setup_database(app: Flask):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI",
-                                                           "postgresql://user:password@localhost:5432/mydb")
+                                                           "postgresql+psycopg2://user:password@localhost:5432/mydb")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     app.logger.info(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
@@ -246,6 +254,18 @@ def setup_search_engine(app):
                 print("[test tags] retrying...")
                 sleep(5)
 
+def setup_prometheus(app):
+    import os
+    from prometheus_flask_exporter import PrometheusMetrics
+    from app.metrics import (
+        site_account_metrics,
+        auth_metrics,
+        user_metrics,
+        tag_metrics,
+        email_metrics,
+    )
+    metrics = PrometheusMetrics.for_app_factory()
+    metrics.init_app(app)
 
 # Here everything for app creation is inited.
 def create_app(testing: bool = False):
@@ -254,13 +274,13 @@ def create_app(testing: bool = False):
     load_dotenv("normal.env")
     load_dotenv("secrets.env")
     if os.getenv("FLASK_ENV") == "migration":
-        os.environ["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost:5432/makeascene"
+        os.environ["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://postgres:postgres@localhost:5432/makeascene"
         os.environ["TYPESENSE_API_KEY"] = "asdfg"
     if testing:
         os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
         app.config["TESTING"] = True
     if os.getenv("FLASK_ENV") == "setup":
-        os.environ["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:postgres@localhost:5432/makeascene"
+        os.environ["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://postgres:postgres@localhost:5432/makeascene"
 
     setup_logging(app)
     setup_openapi(app)
@@ -269,6 +289,7 @@ def create_app(testing: bool = False):
     setup_services(app)
     setup_routes(app)
     open_api_page(app)
+    setup_prometheus(app)
 
     if os.getenv("FLASK_ENV") == "setup":
         setup_search_engine(app)

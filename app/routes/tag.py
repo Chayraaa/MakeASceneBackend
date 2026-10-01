@@ -11,7 +11,7 @@ def get_tags():
     query = request.args.get("query")
     autocomplete = request.args.get("autocomplete")
     page = (request.args.get("page") or 0)
-    if autocomplete:
+    if autocomplete and autocomplete.lower() not in ('false', '0', 'no'):
         res = current_app.tag_service.autocomplete(query, page)
     else:
         res = current_app.tag_service.query_tags(query)

@@ -3,6 +3,7 @@ from app.repositories.interfaces.external.email_protocol import EmailProtocol
 from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
 from app.services.password_service import PasswordService
+from app.metrics import user_metrics, email_metrics
 import os
 
 
@@ -46,7 +47,7 @@ def _assemble_mail(token: str):
                   </h1>
 
                   <p style="margin-top: 20px; color: #555555; font-size: 16px; line-height: 1.6;">
-                    Thanks for signing up!  
+                    Thanks for signing up!
                     Please confirm your email address by clicking the button below.
                   </p>
 
@@ -68,7 +69,7 @@ def _assemble_mail(token: str):
                   </a>
 
                   <p style="margin-top: 40px; color: #888888; font-size: 14px; line-height: 1.5;">
-                    If you didn’t create an account, you can safely ignore this email.
+                    If you didn't create an account, you can safely ignore this email.
                   </p>
                 </td>
               </tr>
@@ -103,6 +104,7 @@ class UserService:
         hashed_password = PasswordService.hash_password(password)
         user = self.get_user_by_email(email)
         if user:
+            user_metrics.user_registered.labels(success='false').inc()
             return False
 
         token = PasswordService.generate_confirm_token()
@@ -111,15 +113,19 @@ class UserService:
         self.user_repo.create_user(email=email, password=hashed_password)
         user = self.user_repo.get_user_by_email(email)
         if not user:
+            user_metrics.user_registered.labels(success='false').inc()
             return False
 
         self.confirm_repo.create(hashed_token=hashed_token, user=user)
         email_text = _assemble_mail(token)
-        self.email_repo_protocol.send_email(
-            subject="Welcome to Make A Scene! Confirm your email to get started.",
-            recipient=email,
-            body=email_text,
-        )
+        with email_metrics.email_send_duration.labels(type='confirm').time():
+            self.email_repo_protocol.send_email(
+                subject="Welcome to Make A Scene! Confirm your email to get started.",
+                recipient=email,
+                body=email_text,
+            )
+        email_metrics.email_sent.labels(type='confirm').inc()
+        user_metrics.user_registered.labels(success='true').inc()
         return True
 
     def resend_confirmation_email(self, email: str) -> bool:
@@ -130,15 +136,21 @@ class UserService:
         hashed_token = PasswordService.hash_confirm_token(token)
         self.confirm_repo.create(hashed_token=hashed_token, user=user)
         email_text = _assemble_mail(token)
-        self.email_repo_protocol.send_email(
-            subject="Welcome to Make A Scene! Confirm your email to get started.",
-            recipient=email,
-            body=email_text,
-        )
+        with email_metrics.email_send_duration.labels(type='confirm').time():
+            self.email_repo_protocol.send_email(
+                subject="Welcome to Make A Scene! Confirm your email to get started.",
+                recipient=email,
+                body=email_text,
+            )
+        email_metrics.email_sent.labels(type='confirm').inc()
+        user_metrics.user_confirmation_email_resent.inc()
         return True
 
     def update_user(self, user: User) -> bool:
         return self.user_repo.update_user(user)
 
     def delete_user(self, user: User) -> bool:
-        return self.user_repo.delete_user(user)
+        result = self.user_repo.delete_user(user)
+        if result:
+            user_metrics.user_deleted.inc()
+        return result

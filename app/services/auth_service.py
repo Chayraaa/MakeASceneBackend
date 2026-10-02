@@ -115,7 +115,9 @@ class AuthService:
         if refresh_token_hash is None:
             auth_metrics.auth_login_attempts.labels(method='local', success='false').inc()
             return None
-
+        old_tokens = self.refresh_token_repo.get_by_user(user)
+        for old_token in old_tokens:
+            self.refresh_token_repo.revoke(old_token)
         self.refresh_token_repo.create(hashed_token=refresh_token_hash, user=user)
         auth_metrics.auth_login_attempts.labels(method='local', success='true').inc()
         return access_token, refresh_token

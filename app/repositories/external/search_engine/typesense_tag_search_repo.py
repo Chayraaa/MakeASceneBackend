@@ -15,8 +15,9 @@ _stemmer_de = SnowballStemmer("german")
 
 class TypesenseTagSearchRepo:
 
-    def __init__(self, client):
+    def __init__(self, client, init_client=None):
         self.client = client
+        self.init_client = init_client or client
         self.expander = TagExpander()
         self.worker = ExpansionWorker(self._process_tag)
 
@@ -37,7 +38,7 @@ class TypesenseTagSearchRepo:
             pass
 
         # Tags:
-        self.client.collections.create({
+        self.init_client.collections.create({
             "name": "tags",
             "fields": [
                 {"name": "id", "type": "string"},

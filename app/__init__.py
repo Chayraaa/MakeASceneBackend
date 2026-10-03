@@ -21,6 +21,7 @@ from openapi_core.contrib.flask import FlaskOpenAPIRequest
 from openapi_core.exceptions import OpenAPIError
 from openapi_core.validation.request.exceptions import InvalidRequestBody
 from openapi_core.validation.schemas.exceptions import InvalidSchemaValue
+from sqlalchemy.engine import make_url
 
 from app.domain_models.user import Role
 from app.repositories.units_of_work.deploy_unit import DeployUnitOfWork
@@ -87,15 +88,26 @@ def setup_oauth(app: Flask):
 
 
 def setup_database(app: Flask):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI",
-                                                           "postgresql+psycopg2://user:password@localhost:5432/mydb")
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        "pool_size": 2,
-        "max_overflow": 3,
-        "pool_pre_ping": True,
-    }
+    uri = os.environ.get("SQLALCHEMY_DATABASE_URI")
+    if not uri:
+        raise RuntimeError("SQLALCHEMY_DATABASE_URI is not set")
 
+    url = make_url(uri)
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = uri
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    if url.get_backend_name() == "postgresql":
+        app.config.setdefault('SQLALCHEMY_ENGINE_OPTIONS', {
+            "pool_size": 2,
+            "max_overflow": 3,
+            "pool_pre_ping": True,
+        })
+
+    app.logger.info(
+        "Connecting to database: %s",
+        url.render_as_string(hide_password=True),
+    )
     db.init_app(app)
     migrate.init_app(app, db)
 

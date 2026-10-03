@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from app.domain_models.site_account.SiteAccount import SiteAccount
+from app.metrics import site_account_metrics
 import threading
 
 _lock = threading.Lock()
@@ -69,6 +70,7 @@ class TypesenseSiteAccountSearchRepo:
             return True
         except Exception as e:
             print("remove_site_account failed:", e)
+            site_account_metrics.site_account_typesense_sync_errors.labels(operation='remove').inc()
             return False
 
     def search_by_semantic(self, query: str, page: int) -> list[SiteAccountSearchResult]:
@@ -95,4 +97,5 @@ class TypesenseSiteAccountSearchRepo:
             return site_accounts
         except Exception as e:
             print("[Site account search] search failed:", e)
+            site_account_metrics.site_account_search_errors.inc()
             return []

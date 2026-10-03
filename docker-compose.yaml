@@ -50,7 +50,9 @@ services:
       - minio_data:/data
 
   typesense:
-    image: ghcr.io/batonogov/typesense:latest
+    build:
+      context: ./typesense
+      dockerfile: Dockerfile
     restart: on-failure
     ports:
       - "8108:8108"
@@ -62,7 +64,7 @@ services:
       interval: 5s
       timeout: 2s
       retries: 20
-      start_period: 10s
+      start_period: 30s
 
     volumes:
       - typesense_data:/data
@@ -83,8 +85,29 @@ services:
       wait
       "
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - db
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+
+
 volumes:
   postgres_data:
   minio_data:
   typesense_data:
   ollama_data:
+  grafana_data:

@@ -1,0 +1,1193 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provisioning
+  namespace: makeascene
+data:
+  dashboards.yml: |
+    apiVersion: 1
+
+    providers:
+      - name: Make A Scene
+        orgId: 1
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: makeascene
+data:
+  prometheus.yml: |
+    apiVersion: 1
+
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        url: http://prometheus:9090
+        access: proxy
+        isDefault: true
+        editable: false
+  postgres.yml: |
+    apiVersion: 1
+
+    datasources:
+      - name: PostgreSQL
+        type: postgres
+        uid: postgres
+        url: db:5432
+        user: postgres
+        secureJsonData:
+          password: ${POSTGRES_PASSWORD}
+        jsonData:
+          database: makeascene
+          sslmode: disable
+          maxOpenConns: 5
+          maxIdleConns: 2
+          connMaxLifetime: 14400
+        editable: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-makeascene
+  namespace: makeascene
+data:
+  makeascene.json: |
+    {
+      "annotations": { "list": [] },
+      "description": "Make A Scene backend monitoring — HTTP traffic, auth, users, tags, site accounts, email",
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 30,
+          "title": "Database Overview",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
+          "id": 31,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM users",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Total Users",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
+          "id": 32,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM users WHERE confirmed = true",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Confirmed Users",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
+          "id": 33,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM tags",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Total Tags",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "yellow", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
+          "id": 34,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM saved_tags",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Tag Saves (Total)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 },
+          "id": 35,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM blocked_tags",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Tag Blocks (Total)",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "teal", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 },
+          "id": 36,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM site_accounts",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Site Accounts",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 18, "y": 1 },
+          "id": 37,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM site_account_applications",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Pending Applications",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "postgres", "uid": "postgres" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "semi-dark-green", "value": null }] },
+              "unit": "short",
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 3, "x": 21, "y": 1 },
+          "id": 38,
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "orientation": "auto",
+            "textMode": "auto",
+            "colorMode": "background",
+            "graphMode": "none"
+          },
+          "targets": [
+            {
+              "datasource": { "type": "postgres", "uid": "postgres" },
+              "rawSql": "SELECT COUNT(*) AS value FROM refresh_tokens WHERE expires_at > NOW() AND revoked = false",
+              "format": "table",
+              "refId": "A"
+            }
+          ],
+          "title": "Active Sessions",
+          "type": "stat"
+        },
+    
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+          "id": 1,
+          "title": "HTTP Traffic",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+          "id": 2,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum(rate(flask_http_request_total[$__rate_interval])) by (method, path) * 60",
+              "legendFormat": "{{method}} {{path}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": {
+                "spanNulls": true,
+                "thresholdsStyle": { "mode": "area" }
+              },
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 0.6 }
+              ]}
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+          "id": 3,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum(rate(flask_http_request_total{status=~\"5..\"}[$__rate_interval])) by (path, status) * 60",
+              "legendFormat": "{{status}} {{path}}",
+              "refId": "A"
+            }
+          ],
+          "title": "5xx Error Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "s",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+          "id": 4,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(rate(flask_http_request_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "p50",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(rate(flask_http_request_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "p95",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.99, sum(rate(flask_http_request_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "p99",
+              "refId": "C"
+            }
+          ],
+          "title": "Request Duration (p50 / p95 / p99)",
+          "type": "timeseries"
+        },
+    
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+          "id": 5,
+          "title": "Authentication",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "unit": "percentunit",
+              "min": 0, "max": 1,
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "red", "value": null },
+                { "color": "yellow", "value": 0.8 },
+                { "color": "green", "value": 0.95 }
+              ]}
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 4, "x": 0, "y": 15 },
+          "id": 6,
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum(increase(auth_login_attempts_total{success=\"true\"}[$__range])) / sum(increase(auth_login_attempts_total[$__range]))",
+              "legendFormat": "Login Success Rate",
+              "refId": "A"
+            }
+          ],
+          "title": "Login Success Rate",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 10, "x": 4, "y": 15 },
+          "id": 7,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(auth_login_attempts_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "success ({{method}})",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(auth_login_attempts_total{success=\"false\"}[$__rate_interval]) * 60",
+              "legendFormat": "failed ({{method}})",
+              "refId": "B"
+            }
+          ],
+          "title": "Login Attempts by Method & Outcome",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 10, "x": 14, "y": 15 },
+          "id": 8,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(auth_token_refresh_total[$__rate_interval]) * 60",
+              "legendFormat": "{{result}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Token Refresh Outcomes",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+          "id": 9,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(auth_password_reset_requested_total[$__rate_interval]) * 60",
+              "legendFormat": "requested",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(auth_password_reset_completed_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "completed (success)",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(auth_password_reset_completed_total{success=\"false\"}[$__rate_interval]) * 60",
+              "legendFormat": "completed (failed)",
+              "refId": "C"
+            }
+          ],
+          "title": "Password Reset Funnel",
+          "type": "timeseries"
+        },
+    
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+          "id": 10,
+          "title": "Users",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 },
+          "id": 11,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(user_registered_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "success",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(user_registered_total{success=\"false\"}[$__rate_interval]) * 60",
+              "legendFormat": "failed (email taken)",
+              "refId": "B"
+            }
+          ],
+          "title": "User Registrations",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 32 },
+          "id": 12,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(user_deleted_total[$__rate_interval]) * 60",
+              "legendFormat": "deletions",
+              "refId": "A"
+            }
+          ],
+          "title": "User Deletions",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 },
+          "id": 13,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(user_confirmation_email_resent_total[$__rate_interval]) * 60",
+              "legendFormat": "resends",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(auth_email_confirmation_total[$__rate_interval]) * 60",
+              "legendFormat": "confirmation result ({{result}})",
+              "refId": "B"
+            }
+          ],
+          "title": "Email Confirmation Activity",
+          "type": "timeseries"
+        },
+    
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+          "id": 14,
+          "title": "Tags",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 41 },
+          "id": 15,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_created_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "created",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_deleted_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "deleted",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_created_total{success=\"false\"}[$__rate_interval]) * 60",
+              "legendFormat": "create failed",
+              "refId": "C"
+            }
+          ],
+          "title": "Tag CRUD Operations",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 41 },
+          "id": 16,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_saved_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "saved",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_unsaved_total[$__rate_interval]) * 60",
+              "legendFormat": "unsaved",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_blocked_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "blocked",
+              "refId": "C"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_unblocked_total[$__rate_interval]) * 60",
+              "legendFormat": "unblocked",
+              "refId": "D"
+            }
+          ],
+          "title": "Tag Engagement (Saves & Blocks)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "s",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 49 },
+          "id": 17,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(rate(tag_query_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "query p95",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(rate(tag_autocomplete_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "autocomplete p95",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(rate(tag_query_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "query p50",
+              "refId": "C"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(rate(tag_autocomplete_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "autocomplete p50",
+              "refId": "D"
+            }
+          ],
+          "title": "Tag Search Duration",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "s",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 49 },
+          "id": 18,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(rate(tag_expansion_duration_seconds_bucket[$__rate_interval])) by (le, model))",
+              "legendFormat": "p95 {{model}}",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(rate(tag_expansion_duration_seconds_bucket[$__rate_interval])) by (le, model))",
+              "legendFormat": "p50 {{model}}",
+              "refId": "B"
+            }
+          ],
+          "title": "LLM Tag Expansion Duration (by model)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 49 },
+          "id": 19,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_expansion_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "success {{model}}",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_expansion_total{success=\"false\"}[$__rate_interval]) * 60",
+              "legendFormat": "failed {{model}}",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_expansion_fallback_total[$__rate_interval]) * 60",
+              "legendFormat": "fallback to raw ({{model}})",
+              "refId": "C"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(tag_search_errors_total[$__rate_interval]) * 60",
+              "legendFormat": "search error ({{search_type}})",
+              "refId": "D"
+            }
+          ],
+          "title": "LLM Expansion Results & Search Errors",
+          "type": "timeseries"
+        },
+    
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 57 },
+          "id": 20,
+          "title": "Site Accounts",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 58 },
+          "id": 21,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_created_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "created",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_created_total{success=\"false\"}[$__rate_interval]) * 60",
+              "legendFormat": "create failed",
+              "refId": "B"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_deleted_total{success=\"true\"}[$__rate_interval]) * 60",
+              "legendFormat": "deleted",
+              "refId": "C"
+            }
+          ],
+          "title": "Site Account Operations",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 58 },
+          "id": 22,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_application_submitted_total[$__rate_interval]) * 60",
+              "legendFormat": "submitted",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_application_deleted_total[$__rate_interval]) * 60",
+              "legendFormat": "deleted/rejected",
+              "refId": "B"
+            }
+          ],
+          "title": "Application Funnel (Submissions vs Deletions)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 58 },
+          "id": 23,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_images_uploaded_total[$__rate_interval]) * 60",
+              "legendFormat": "images uploaded",
+              "refId": "A"
+            }
+          ],
+          "title": "Image Uploads to S3",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "s",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 66 },
+          "id": 24,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(rate(site_account_search_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "search p95",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(rate(site_account_search_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "search p50",
+              "refId": "B"
+            }
+          ],
+          "title": "Site Account Search Duration",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "s",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 66 },
+          "id": 25,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(rate(site_account_image_processing_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "image processing p95",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(rate(site_account_image_processing_duration_seconds_bucket[$__rate_interval])) by (le))",
+              "legendFormat": "image processing p50",
+              "refId": "B"
+            }
+          ],
+          "title": "Layout Image Processing Duration",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": {
+                "spanNulls": true,
+                "thresholdsStyle": { "mode": "area" }
+              },
+              "thresholds": { "mode": "absolute", "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 0.06 }
+              ]}
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 66 },
+          "id": 26,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_search_errors_total[$__rate_interval]) * 60",
+              "legendFormat": "search errors",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(site_account_typesense_sync_errors_total[$__rate_interval]) * 60",
+              "legendFormat": "typesense sync error ({{operation}})",
+              "refId": "B"
+            }
+          ],
+          "title": "Typesense Errors",
+          "type": "timeseries"
+        },
+    
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 74 },
+          "id": 27,
+          "title": "Email",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "req/min",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 75 },
+          "id": 28,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "rate(email_sent_total[$__rate_interval]) * 60",
+              "legendFormat": "{{type}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Email Sends by Type",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "s",
+              "custom": { "spanNulls": true }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 75 },
+          "id": 29,
+          "options": { "tooltip": { "mode": "multi" } },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(rate(email_send_duration_seconds_bucket[$__rate_interval])) by (le, type))",
+              "legendFormat": "p95 {{type}}",
+              "refId": "A"
+            },
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(rate(email_send_duration_seconds_bucket[$__rate_interval])) by (le, type))",
+              "legendFormat": "p50 {{type}}",
+              "refId": "B"
+            }
+          ],
+          "title": "Email Send Duration",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "tags": ["makeascene"],
+      "templating": { "list": [] },
+      "time": { "from": "now-1h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Make A Scene",
+      "uid": "makeascene-main",
+      "version": 1
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: makeascene
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: makeascene-secrets
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: dashboard-provisioning
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboard-makeascene
+              mountPath: /etc/grafana/dashboards
+            - name: grafana-storage
+              mountPath: /var/lib/grafana
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: dashboard-provisioning
+          configMap:
+            name: grafana-dashboard-provisioning
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboard-makeascene
+          configMap:
+            name: grafana-dashboard-makeascene
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: makeascene
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP

@@ -1,75 +1,56 @@
-apiVersion: apps/v1
-kind: StatefulSet
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
 metadata:
-  name: db
+  name: makeascene-db
   namespace: makeascene
 spec:
-  serviceName: db
-  replicas: 1
-  selector:
-    matchLabels:
-      app: db
-  template:
-    metadata:
-      labels:
-        app: db
-    spec:
-      containers:
-        - name: postgres
-          image: postgres:18-alpine
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: makeascene-secrets
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: makeascene-secrets
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_DB
-              value: "makeascene"
-            # Alpine postgres stores data here by default
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-          volumeMounts:
-            - name: postgres-storage
-              mountPath: /var/lib/postgresql/data
-          readinessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            failureThreshold: 5
-          livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            failureThreshold: 5
-      volumes:
-        - name: postgres-storage
-          persistentVolumeClaim:
-            claimName: postgres-pvc
+  instances: 2                      # 1 Primary + 1 Replica; 3 für echtes HA-Quorum
+  imageName: ghcr.io/cloudnative-pg/postgis:18-3.6-system-trixie
+  storage:
+    size: 10Gi
+
+  bootstrap:
+    initdb:
+      database: makeascene
+      owner: makeascene
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS postgis;
+
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits:   { memory: 1Gi }
+
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: makeascene-backups
 ---
-apiVersion: v1
-kind: Service
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
 metadata:
-  name: db
+  name: makeascene-backups
   namespace: makeascene
 spec:
-  selector:
-    app: db
-  ports:
-    - port: 5432
-      targetPort: 5432
-  clusterIP: None   # Headless — StatefulSet pods get stable DNS names
+  retentionPolicy: "14d"
+  configuration:
+    destinationPath: s3://makeascene-db-backup/
+    endpointURL: https://nbg1.your-objectstorage.com
+    s3Credentials:
+      accessKeyId:     { name: makeascene-secrets, key: S3_ACCESS_KEY }
+      secretAccessKey: { name: makeascene-secrets, key: S3_SECRET_KEY }
+    wal:
+      compression: gzip
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: makeascene-daily
+  namespace: makeascene
+spec:
+  schedule: "0 0 3 * * *"
+  cluster:
+    name: makeascene-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

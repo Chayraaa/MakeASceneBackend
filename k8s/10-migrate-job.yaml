@@ -1,24 +1,14 @@
-# Run this Job before rolling out a new backend image.
-# It uses the same image + env/secrets as the backend, but overrides
-# the command to run the migration instead of starting the server.
-#
-# Job names must be unique per run (Jobs are immutable), so the
-# CI pipeline substitutes a unique name (e.g. using the commit SHA)
-# before applying this.
-
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: backend-migrate-REPLACE_ME   # CI replaces REPLACE_ME with the git SHA
+  name: backend-migrate-REPLACE_ME   # per sed ersetzen, siehe unten
   namespace: makeascene
 spec:
-  backoffLimit: 2          # retry twice on failure, then give up
-  ttlSecondsAfterFinished: 3600   # auto-cleanup 1hr after completion
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       restartPolicy: Never
-      # Same dependency wait as the backend — don't try to migrate
-      # before postgres is reachable.
       initContainers:
         - name: wait-for-db
           image: busybox:1.36
@@ -26,12 +16,13 @@ spec:
             - sh
             - -c
             - |
-              until nc -z db 5432; do
+              until nc -z makeascene-db-rw 5432; do
                 echo "Waiting for PostgreSQL..."; sleep 2
               done
+              echo "PostgreSQL is up."
       containers:
         - name: migrate
-          image: your-registry/makeascene-backend:latest   # CI replaces tag
+          image: ghcr.io/chayraaa/makeascene-backend:latest   # CI ersetzt den Tag
           command: ["flask", "db", "upgrade"]
           envFrom:
             - configMapRef:
@@ -39,7 +30,17 @@ spec:
             - secretRef:
                 name: makeascene-secrets
           env:
-            # run.py does `app = create_app()` at module level, so Flask's
-            # CLI just needs to import that module — no factory call syntax needed.
             - name: FLASK_APP
               value: "run.py"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: makeascene-db-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: makeascene-db-app
+                  key: password
+            - name: SQLALCHEMY_DATABASE_URI   # muss nach DB_USER/DB_PASSWORD stehen
+              value: "postgresql+psycopg2://$(DB_USER):$(DB_PASSWORD)@makeascene-db-rw:5432/makeascene"

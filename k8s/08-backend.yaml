@@ -27,7 +27,7 @@ spec:
             - sh
             - -c
             - |
-              until nc -z db 5432; do
+              until nc -z makeascene-db-rw 5432; do
                 echo "Waiting for PostgreSQL..."; sleep 2
               done
               echo "PostgreSQL is up."
@@ -57,6 +57,19 @@ spec:
             # RESEND_API_KEY, TYPESENSE_API_KEY (mirrors secrets.env)
             - secretRef:
                 name: makeascene-secrets
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: makeascene-db-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: makeascene-db-app
+                  key: password
+            - name: SQLALCHEMY_DATABASE_URI        # muss nach DB_USER/DB_PASSWORD stehen
+              value: "postgresql+psycopg2://$(DB_USER):$(DB_PASSWORD)@makeascene-db-rw:5432/makeascene"
           readinessProbe:
             httpGet:
               path: /v1/health   # adjust to your actual health endpoint

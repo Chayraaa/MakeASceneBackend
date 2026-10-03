@@ -34,7 +34,6 @@ from app.services.tag_service import TagService
 from app.services.user_service import UserService
 from app.extensions import db, migrate
 from openapi_core import OpenAPI
-import typesense
 from app.extensions import typesense_client
 
 # Add all the db database_models here
@@ -91,8 +90,12 @@ def setup_database(app: Flask):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI",
                                                            "postgresql+psycopg2://user:password@localhost:5432/mydb")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        "pool_size": 2,
+        "max_overflow": 3,
+        "pool_pre_ping": True,
+    }
 
-    app.logger.info(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     db.init_app(app)
     migrate.init_app(app, db)
 

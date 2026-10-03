@@ -41,10 +41,10 @@ data:
       - name: PostgreSQL
         type: postgres
         uid: postgres
-        url: db:5432
-        user: postgres
+        url: makeascene-db-ro:5432
+        user: ${DB_USER}
         secureJsonData:
-          password: ${POSTGRES_PASSWORD}
+          password: ${DB_PASSWORD}
         jsonData:
           database: makeascene
           sslmode: disable
@@ -1132,11 +1132,16 @@ spec:
           ports:
             - containerPort: 3000
           env:
-            - name: POSTGRES_PASSWORD
+            - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: makeascene-secrets
-                  key: POSTGRES_PASSWORD
+                  name: makeascene-db-app
+                  key: password
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: makeascene-db-app
+                  key: username
           volumeMounts:
             - name: dashboard-provisioning
               mountPath: /etc/grafana/provisioning/dashboards

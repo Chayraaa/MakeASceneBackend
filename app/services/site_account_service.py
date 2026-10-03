@@ -11,6 +11,7 @@ from app.repositories.interfaces.storage.site_account.site_account_application_r
 from app.repositories.interfaces.storage.site_account.site_account_repo_protocol import SiteAccountRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
 from app.services.image_service import ImageService
+from app.metrics import site_account_metrics
 
 
 def _looks_like_base64_image(s: str) -> bool:
@@ -28,25 +29,31 @@ class SiteAccountService:
         self.application_repo = application_repo
         pass
 
-    def _replace_images(self, data: Any, site_account: SiteAccount):
+    def _replace_images(self, data: Any, site_account: SiteAccount, _counter: list | None = None):
         if isinstance(data, dict):
-            return {k: self._replace_images(v, site_account) for k, v in data.items()}
+            return {k: self._replace_images(v, site_account, _counter) for k, v in data.items()}
 
         if isinstance(data, list):
-            return [self._replace_images(v, site_account) for v in data]
+            return [self._replace_images(v, site_account, _counter) for v in data]
 
         if isinstance(data, str) and _looks_like_base64_image(data):
+            if _counter is not None:
+                _counter[0] += 1
+            site_account_metrics.site_account_images_uploaded.inc()
             return self.image_service.save_site_account_image(data, site_account)
 
         return data
 
     def create_site_account(self, name: str, creator: User) -> bool:
         if not self.site_account_repo.create_site_account(name, creator):
+            site_account_metrics.site_account_created.labels(success='false').inc()
             return False
         site_account = self.site_account_repo.get_site_account_by_name(name)
         if not site_account:
+            site_account_metrics.site_account_created.labels(success='false').inc()
             return False
         self.search_engine.add_site_account(site_account)
+        site_account_metrics.site_account_created.labels(success='true').inc()
         return True
 
     def get_site_account_by_id(self, site_account_id: int) -> SiteAccount | None:
@@ -56,20 +63,35 @@ class SiteAccountService:
         if name:
             site_account.name = name
         if layout:
-            layout = self._replace_images(layout, site_account)
+            image_count = [0]
+            with site_account_metrics.site_account_image_processing_duration.time():
+                layout = self._replace_images(layout, site_account, image_count)
+            site_account_metrics.site_account_layout_image_count.observe(image_count[0])
             site_account.layout = json.dumps(layout)
         self.search_engine.update_site_account(site_account)
         return self.site_account_repo.update_site_account(site_account)
 
     def delete_site_account(self, site_account: SiteAccount):
-        return self.site_account_repo.remove_site_account(site_account)
+        if self.site_account_repo.remove_site_account(site_account):
+            result = self.search_engine.remove_site_account(site_account)
+            site_account_metrics.site_account_deleted.labels(success='true').inc()
+            return result
+        else:
+            site_account_metrics.site_account_deleted.labels(success='false').inc()
+            return False
 
     def apply_for_site_account(self, user: User, artist_name: str, account_name: str, reason: str, sources: list[str],
                                contact: list[str]) -> bool:
-        return self.application_repo.create_application(user, artist_name, account_name, reason, sources, contact)
+        result = self.application_repo.create_application(user, artist_name, account_name, reason, sources, contact)
+        if result:
+            site_account_metrics.site_account_application_submitted.inc()
+        return result
 
     def delete_application(self, application: SiteAccountApplication) -> bool:
-        return self.application_repo.delete_application(application)
+        result = self.application_repo.delete_application(application)
+        if result:
+            site_account_metrics.site_account_application_deleted.inc()
+        return result
 
     def get_applications(self, page: int = 1, page_size: int = 25) -> list[SiteAccountApplication]:
         return self.application_repo.get_applications(page, page_size)
@@ -86,10 +108,11 @@ class SiteAccountService:
         return self.application_repo.update_application(application)
 
     def query_site_accounts(self, query: str, page: int = 1):
-        results = self.search_engine.search_by_semantic(query, page)
-        found = []
-        for result in results:
-            found.append(self.get_site_account_by_id(result.id))
+        with site_account_metrics.site_account_search_duration.time():
+            results = self.search_engine.search_by_semantic(query, page)
+            found = []
+            for result in results:
+                found.append(self.get_site_account_by_id(result.id))
         return found
 
     def has_authority(self, user: User, site_account: SiteAccount):

@@ -1,7 +1,10 @@
 import os
 import re
+import time
 
 import requests
+
+from app.metrics import tag_metrics
 
 
 class TagExpander:
@@ -44,6 +47,7 @@ class TagExpander:
             self.ollama = "http://localhost:11434/api/generate"
 
     def expand_tag_slow(self, tag_name: str) -> str:
+        start = time.monotonic()
         try:
             response = requests.post(
                 self.ollama,
@@ -61,17 +65,19 @@ class TagExpander:
                 },
                 timeout=60
             )
-            return self._clean(tag_name, response.json().get("response", ""))
+            result = self._clean(tag_name, response.json().get("response", ""))
+            tag_metrics.tag_expansion_duration.labels(model='gemma2').observe(time.monotonic() - start)
+            tag_metrics.tag_expansion_total.labels(model='gemma2', success='true').inc()
+            return result
         except Exception as e:
             print(f"[expand] failed for '{tag_name}': {e}")
+            tag_metrics.tag_expansion_duration.labels(model='gemma2').observe(time.monotonic() - start)
+            tag_metrics.tag_expansion_total.labels(model='gemma2', success='false').inc()
+            tag_metrics.tag_expansion_fallback_total.labels(model='gemma2').inc()
             return tag_name
-
-        except Exception as e:
-            print(f"[expand] LLM expansion failed for '{tag_name}': {e}")
-            return tag_name
-
 
     def expand_tag_fast(self, tag_name: str) -> str:
+        start = time.monotonic()
         try:
             response = requests.post(
                 self.ollama,
@@ -89,8 +95,14 @@ class TagExpander:
                 },
                 timeout=3
             )
-            return self._clean(tag_name, response.json().get("response", ""))
+            result = self._clean(tag_name, response.json().get("response", ""))
+            tag_metrics.tag_expansion_duration.labels(model='qwen25').observe(time.monotonic() - start)
+            tag_metrics.tag_expansion_total.labels(model='qwen25', success='true').inc()
+            return result
         except Exception:
+            tag_metrics.tag_expansion_duration.labels(model='qwen25').observe(time.monotonic() - start)
+            tag_metrics.tag_expansion_total.labels(model='qwen25', success='false').inc()
+            tag_metrics.tag_expansion_fallback_total.labels(model='qwen25').inc()
             return tag_name
 
 

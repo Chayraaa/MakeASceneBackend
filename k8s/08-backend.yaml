@@ -72,6 +72,9 @@ spec:
           # Required for the HPA to calculate CPU/memory utilization %.
           # Sized for gunicorn -w 4 (4 worker processes per pod).
           # Watch real usage with `kubectl top pods -n makeascene` and adjust.
+          volumeMounts:
+            - name: prometheus-multiproc
+              mountPath: /tmp/prometheus_multiproc
           resources:
             requests:
               cpu: "500m"
@@ -79,6 +82,9 @@ spec:
             limits:
               cpu: "1500m"
               memory: "1Gi"
+      volumes:
+        - name: prometheus-multiproc
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

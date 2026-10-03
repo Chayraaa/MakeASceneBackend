@@ -11,12 +11,23 @@ if os.getenv("FLASK_ENV") == "migration":
 
 db = SQLAlchemy()
 migrate = Migrate()
+_typesense_node = [{
+    'host': os.environ.get("TYPESENSE_HOST", "localhost"),
+    'port': '8108',
+    'protocol': 'http'
+}]
+_typesense_key = os.environ.get("TYPESENSE_API_KEY", "")
+
 typesense_client = typesense.Client({
-    'nodes': [{
-        'host': os.environ.get("TYPESENSE_HOST", "localhost"),
-        'port': '8108',
-        'protocol': 'http'
-    }],
-    'api_key': os.environ.get("TYPESENSE_API_KEY", ""),
+    'nodes': _typesense_node,
+    'api_key': _typesense_key,
     'connection_timeout_seconds': 2
+})
+
+# Used only during collection initialisation, which triggers a model download
+# on first run (~440 MB). Normal search requests still use the 2s client.
+typesense_init_client = typesense.Client({
+    'nodes': _typesense_node,
+    'api_key': _typesense_key,
+    'connection_timeout_seconds': 300
 })

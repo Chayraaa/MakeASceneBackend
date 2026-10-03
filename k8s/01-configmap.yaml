@@ -18,3 +18,5 @@ data:
   S3_SECURE: "True"
   S3_ENDPOINT: "nbg1.your-objectstorage.com"
   S3_BUCKET_NAME: "makeascene-img"
+
+  PROMETHEUS_MULTIPROC_DIR: "/tmp/prometheus_multiproc"

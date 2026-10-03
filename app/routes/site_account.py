@@ -40,6 +40,7 @@ def get_site_account(id: int):
             "name": account.name,
             "layout": json.loads(account.layout)
         }
+    return {"message": "Site account not found."}, 404
 
 
 @site_account.route("/<int:id>", methods=["PATCH"])

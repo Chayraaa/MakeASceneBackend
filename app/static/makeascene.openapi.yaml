@@ -1645,48 +1645,24 @@ components:
     SiteAccountTextLayout:
       type: object
       properties:
-        component_type:
-          type: string
-          enum:
-            - text
-            - image
-            - events
-            - combined
         text:
           type: string
       required:
         - text
-        - component_type
     SiteAccountImageLayout:
       type: object
       properties:
-        component_type:
-          type: string
-          enum:
-            - text
-            - image
-            - events
-            - combined
         image:
           type: string
       required:
         - image
-        - component_type
     SiteAccountEventsLayout:
       type: object
       properties:
         sorting:
           type: string
-        component_type:
-          type: string
-          enum:
-            - text
-            - image
-            - events
-            - combined
       required:
         - sorting
-        - component_type
     SiteAccountCombinedLayout:
       type: object
       properties:
@@ -1694,10 +1670,12 @@ components:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/SiteAccountTextLayout'
-              - $ref: '#/components/schemas/SiteAccountImageLayout'
-              - $ref: '#/components/schemas/SiteAccountEventsLayout'
-              - $ref: '#/components/schemas/SiteAccountCombinedLayout'
+              - $ref: '#/components/schemas/SiteAccountObject'
+      required:
+        - combined
+    SiteAccountObject:
+      type: object
+      properties:
         component_type:
           type: string
           enum:
@@ -1705,8 +1683,17 @@ components:
             - image
             - events
             - combined
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/SiteAccountTextLayout'
+            - $ref: '#/components/schemas/SiteAccountImageLayout'
+            - $ref: '#/components/schemas/SiteAccountEventsLayout'
+            - $ref: '#/components/schemas/SiteAccountCombinedLayout'
+        layout_variant:
+          type: integer
       required:
-        - combined
+        - layout_variant
+        - data
         - component_type
     SiteAccount:
       type: object
@@ -1724,27 +1711,7 @@ components:
         layout:
           type: array
           items:
-            type: object
-            properties:
-              component_type:
-                type: string
-                enum:
-                  - text
-                  - image
-                  - events
-                  - combined
-              data:
-                oneOf:
-                  - $ref: '#/components/schemas/SiteAccountTextLayout'
-                  - $ref: '#/components/schemas/SiteAccountImageLayout'
-                  - $ref: '#/components/schemas/SiteAccountEventsLayout'
-                  - $ref: '#/components/schemas/SiteAccountCombinedLayout'
-              layout_variant:
-                type: integer
-            required:
-              - layout_variant
-              - data
-              - component_type
+            $ref: '#/components/schemas/SiteAccountObject'
       required:
         - id
         - creator_id
@@ -1781,27 +1748,7 @@ components:
         layout:
           type: array
           items:
-            type: object
-            properties:
-              component_type:
-                type: string
-                enum:
-                  - text
-                  - image
-                  - events
-                  - combined
-              data:
-                oneOf:
-                  - $ref: '#/components/schemas/SiteAccountTextLayout'
-                  - $ref: '#/components/schemas/SiteAccountImageLayout'
-                  - $ref: '#/components/schemas/SiteAccountEventsLayout'
-                  - $ref: '#/components/schemas/SiteAccountCombinedLayout'
-              layout_variant:
-                type: integer
-            required:
-              - layout_variant
-              - data
-              - component_type
+            $ref: '#/components/schemas/SiteAccountObject'
     ApplyForSiteAccountRequest:
       type: object
       properties:

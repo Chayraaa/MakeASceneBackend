@@ -89,7 +89,9 @@ class TypesenseLocationSearchRepo:
         search_parameters = {
             "q": query,
             "query_by": "name,city,state,county,country,postcode,street,formatted",
-            "query_by_weights": "10,10,8,6,3,4,7,2",
+            "query_by_weights": "15,10,8,6,3,5,4,2",
+            "prioritize_exact_match": True,
+            "sort_by": "_text_match:desc,importance:desc",
             "per_page": 10,
         }
 

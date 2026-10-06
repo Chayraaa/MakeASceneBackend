@@ -15,6 +15,8 @@ tags:
   - name: Site Account
   - name: Application
   - name: Image
+  - name: Location
+  - name: Event
 paths:
   /users/me/tags/{id}:
     delete:
@@ -1373,6 +1375,198 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
           description: Validation error – one or more fields failed validation
       security: []
+  /location:
+    get:
+      summary: Query Location
+      deprecated: false
+      description: |
+        Used to autocomplete the location searches in the frontend
+      operationId: getLocation
+      tags:
+        - Location
+      parameters:
+        - name: q
+          in: query
+          description: ''
+          required: false
+          example: Hof
+          schema:
+            type: string
+        - name: force_api
+          in: query
+          description: ''
+          required: false
+          example: 'false'
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationQueryAnswer'
+          headers: {}
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+  /event/{id}:
+    get:
+      summary: Get Event
+      deprecated: false
+      description: Gets details about an event
+      operationId: getEvent
+      tags:
+        - Event
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventObject'
+          headers: {}
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security: []
+    patch:
+      summary: Change Event
+      deprecated: false
+      description: Updates an existing event
+      operationId: updateEvent
+      tags:
+        - Event
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventObjectUpdate'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteUserResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Delete Event
+      deprecated: false
+      description: Deletes and existing event
+      operationId: deleteEvent
+      tags:
+        - Event
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      - Deletion was successful.
+                required:
+                  - message
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /event:
+    post:
+      summary: Create Event
+      deprecated: false
+      description: Creates a new event
+      operationId: createEvent
+      tags:
+        - Event
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventObjectCreate'
+            examples: {}
+        required: true
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteUserResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
 webhooks: {}
 components:
   schemas:
@@ -1642,7 +1836,7 @@ components:
       required:
         - id
         - name
-    SiteAccountTextLayout:
+    SiteAccountTextLayout: &ref_0
       type: object
       properties:
         text:
@@ -1831,6 +2025,193 @@ components:
           type: array
           items:
             type: string
+    LocationQueryAnswer:
+      type: array
+      items:
+        $ref: '#/components/schemas/LocationObject'
+    LocationObject:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name
+        lat:
+          type: number
+        lon:
+          type: number
+        id:
+          type: string
+          description: ID
+        formatted:
+          type: string
+      required:
+        - name
+        - lat
+        - lon
+        - id
+        - formatted
+    EventTextData: *ref_0
+    EventImageData:
+      type: object
+      properties:
+        image:
+          type: string
+          description: base64/url of an image
+      required:
+        - image
+    EventOtherData:
+      type:
+        - string
+        - integer
+        - boolean
+        - array
+        - object
+        - number
+        - 'null'
+    EventObject:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID
+        name:
+          type: string
+          description: name
+        description:
+          type: string
+        from:
+          type: string
+          format: date-time
+        till:
+          type: string
+          format: date-time
+        child-friendly:
+          type: boolean
+        disability-friendly:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: integer
+            description: The tag ids
+          description: tag
+        place-id:
+          type: string
+          description: the id given by the location query
+        layout:
+          type: integer
+          description: The chosen layout
+        data:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/EventTextData'
+              - $ref: '#/components/schemas/EventImageData'
+              - $ref: '#/components/schemas/EventOtherData'
+          description: The data needed to display the events
+        owner-id:
+          type: integer
+      required:
+        - id
+        - name
+        - from
+        - child-friendly
+        - disability-friendly
+        - tags
+        - place-id
+        - layout
+        - till
+        - description
+        - owner-id
+    EventObjectCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name
+        description:
+          type: string
+        from:
+          type: string
+          format: date-time
+        till:
+          type: string
+          format: date-time
+        child-friendly:
+          type: boolean
+        disability-friendly:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: integer
+            description: The tag ids
+          description: tag
+        place-id:
+          type: string
+          description: the id given by the location query
+        layout:
+          type: integer
+          description: The chosen layout
+        data:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/EventTextData'
+              - $ref: '#/components/schemas/EventImageData'
+              - $ref: '#/components/schemas/EventOtherData'
+          description: The data needed to display the events
+        owner-id:
+          type: integer
+      required:
+        - name
+        - from
+        - child-friendly
+        - disability-friendly
+        - tags
+        - place-id
+        - layout
+        - till
+        - description
+        - owner-id
+    EventObjectUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: name
+        description:
+          type: string
+        from:
+          type: string
+          format: date-time
+        till:
+          type: string
+          format: date-time
+        child-friendly:
+          type: boolean
+        disability-friendly:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: integer
+            description: The tag ids
+          description: tag
+        place-id:
+          type: string
+          description: the id given by the location query
+        layout:
+          type: integer
+          description: The chosen layout
+        data:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/EventTextData'
+              - $ref: '#/components/schemas/EventImageData'
+              - $ref: '#/components/schemas/EventOtherData'
+          description: The data needed to display the events
   responses:
     Unauthorized:
       description: Authentication failed

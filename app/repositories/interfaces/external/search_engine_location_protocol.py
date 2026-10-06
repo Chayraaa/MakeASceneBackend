@@ -1,0 +1,9 @@
+from typing import Protocol
+
+
+class SearchEngineLocationProtocol(Protocol):
+    def __init__(self, client): ...
+
+    def add_location(self, location: dict) -> dict: ...
+
+    def autocomplete_location(self, query: str) -> list[dict]: ...

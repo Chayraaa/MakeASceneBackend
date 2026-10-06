@@ -2,6 +2,8 @@ import logging
 import os
 from enum import Enum
 
+from app.services.location_service import LocationService
+
 # Must happen before any prometheus_client metric is instantiated (i.e. before
 # any metrics module is imported). prometheus_client switches to multiprocess
 # mode as soon as PROMETHEUS_MULTIPROC_DIR is set, and immediately tries to
@@ -140,6 +142,7 @@ def setup_services(app: Flask):
                                  unit_of_work.blocked_tag_repo, unit_of_work.tag_search_engine)
     app.site_account_service = SiteAccountService(unit_of_work.site_account_repo,
                                                   unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo)
+    app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo)
 
 
 # Add all the routes here (see health as example)
@@ -156,6 +159,8 @@ def setup_routes(app: Flask):
     app.register_blueprint(tags, url_prefix="/v1/tags")
     from .routes.site_account import site_account
     app.register_blueprint(site_account, url_prefix="/v1/site_accounts")
+    from .routes.location import location
+    app.register_blueprint(location, url_prefix="/v1/location")
 
 
 ########################

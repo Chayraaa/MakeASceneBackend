@@ -1,6 +1,8 @@
 from app.extensions import db
 from app.repositories.external.resend_email_repo import ResendEmailRepo
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
+from app.repositories.interfaces.external.location_protocol import LocationProtocol
+from app.repositories.interfaces.external.search_engine_location_protocol import SearchEngineLocationProtocol
 
 from app.repositories.interfaces.external.search_engine_site_account_protocol import SearchEngineSiteAccountProtocol
 from app.repositories.interfaces.external.search_engine_tag_protocol import SearchEngineTagProtocol
@@ -47,3 +49,5 @@ class TestUnitOfWork:
         self.site_account_repo: SiteAccountRepoProtocol = SqlSiteAccountRepo(db.session)
         self.site_account_application_repo: SiteAccountApplicationRepoProtocol = SqlSiteAccountApplicationRepo(
             db.session)
+        self.location_search_engine: SearchEngineLocationProtocol = None
+        self.location_api_repo: LocationProtocol = None

@@ -10,6 +10,7 @@ from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import
 from app.repositories.interfaces.storage.image_storage_protocol import ImageStorageProtocol
 from app.repositories.interfaces.storage.auth.password_reset_token_repo_protocol import PasswordResetTokenRepoProtocol
 from app.repositories.interfaces.storage.auth.refresh_token_repo_protocol import RefreshTokenRepoProtocol
+from app.repositories.interfaces.storage.location_storage_protocol import LocationStorageProtocol
 from app.repositories.interfaces.storage.site_account.site_account_application_repo_protocol import \
     SiteAccountApplicationRepoProtocol
 from app.repositories.interfaces.storage.site_account.site_account_repo_protocol import SiteAccountRepoProtocol
@@ -23,6 +24,7 @@ from app.repositories.storage.auth.sql_password_reset_token_repo import SqlPassw
 from app.repositories.storage.auth.sql_refresh_token_repo import SqlRefreshTokenRepo
 from app.repositories.storage.site_account.sql_site_account_application_repo import SqlSiteAccountApplicationRepo
 from app.repositories.storage.site_account.sql_site_account_repo import SqlSiteAccountRepo
+from app.repositories.storage.sql_location_repo import SQLLocationRepo
 from app.repositories.storage.sql_user_repo import SqlUserRepo
 from app.repositories.storage.tags.sql_blocked_tag_repo import SqlBlockedTagRepo
 from app.repositories.storage.tags.sql_saved_tag_repo import SqlSavedTagRepo
@@ -51,3 +53,4 @@ class TestUnitOfWork:
             db.session)
         self.location_search_engine: SearchEngineLocationProtocol = None
         self.location_api_repo: LocationProtocol = None
+        self.location_storage: LocationStorageProtocol = SQLLocationRepo(db.session)

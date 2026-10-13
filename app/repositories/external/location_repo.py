@@ -8,6 +8,7 @@ class LocationRepo(LocationProtocol):
     def __init__(self):
         self.api_key = os.environ.get("GEOAPIFY_KEY")
 
+    # Place Details API - answer is the dict.
     def get_location_details(self, place_id: str) -> dict:
         ...
 

@@ -10,7 +10,18 @@ class LocationRepo(LocationProtocol):
 
     # Place Details API - answer is the dict.
     def get_location_details(self, place_id: str) -> dict:
-        ...
+        url = f"https://api.geoapify.com/v2/place-details?id={place_id}&features=details,details.names&apiKey={self.api_key}"
+
+        payload = {}
+        headers = {}
+
+        response = requests.request("GET", url, headers=headers, data=payload)
+
+        if response.status_code != 200:
+            print(f"Error: {response.status_code} - {response.text}")
+            return {}
+
+        return response.json()
 
     def autocomplete_location(self, query: str) -> list[dict]:
         url = f"https://api.geoapify.com/v1/geocode/autocomplete?text={query}&limit=5&lang=de&format=json&apiKey={self.api_key}"
@@ -19,5 +30,8 @@ class LocationRepo(LocationProtocol):
         headers = {}
 
         response = requests.request("GET", url, headers=headers, data=payload)
+        if response.status_code != 200:
+            print(f"Error: {response.status_code} - {response.text}")
+            return []
 
         return response.json()["results"]

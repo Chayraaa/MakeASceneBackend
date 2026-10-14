@@ -143,7 +143,7 @@ def setup_services(app: Flask):
                                  unit_of_work.blocked_tag_repo, unit_of_work.tag_search_engine)
     app.site_account_service = SiteAccountService(unit_of_work.site_account_repo,
                                                   unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo)
-    app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo)
+    app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo, unit_of_work.location_storage)
 
 
 # Add all the routes here (see health as example)

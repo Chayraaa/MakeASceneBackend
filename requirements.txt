@@ -22,3 +22,5 @@ nltk
 flask-cors
 prometheus_flask_exporter
 prometheus-client
+geoalchemy2
+shapely

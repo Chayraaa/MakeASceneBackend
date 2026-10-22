@@ -28,8 +28,7 @@ class S3ImageStorage:
         except S3Error as e:
             if e.code != "BucketAlreadyOwnedByYou":
                 raise
-        finally:
-            self._bucket_initialized = True
+        self._bucket_initialized = True
 
     def save_image(self, key: str, image_data: BinaryIO, mime: str) -> str:
         self._ensure_bucket()

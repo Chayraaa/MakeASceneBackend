@@ -1,6 +1,8 @@
 from flask import Blueprint, request, current_app, json
 from app import validate, login_required
 from app.domain_models.user import Role, User
+from app.extensions import db
+from sqlalchemy.exc import IntegrityError
 
 site_account = Blueprint('site_account', __name__)
 
@@ -9,7 +11,9 @@ site_account = Blueprint('site_account', __name__)
 @validate
 def query_site_accounts():
     q = request.args.get("q")
-    page = request.args.get("page") or 1
+    page = request.args.get("page", 1, type=int)
+    if page < 1:
+        return {"error": "validation", "message": "page must be positive."}, 422
     sites = current_app.site_account_service.query_site_accounts(q, page)
     return [site.to_dict() for site in sites], 200, []
 
@@ -24,8 +28,12 @@ def create_site_account(user: User):
     if not creator:
         return {"message": "User not found."}, 404
 
-    if current_app.site_account_service.create_site_account(name, creator):
-        return {"message": "Site account created."}, 200
+    try:
+        if current_app.site_account_service.create_site_account(name, creator):
+            return {"message": "Site account created."}, 200
+    except IntegrityError:
+        db.session.rollback()
+        return {"error": "validation", "message": "Site account name is already in use."}, 422
     return {"message": "Failed to create site account."}, 500
 
 
@@ -34,12 +42,7 @@ def create_site_account(user: User):
 def get_site_account(id: int):
     account = current_app.site_account_service.get_site_account_by_id(id)
     if account:
-        return {
-            "id": account.id,
-            "creator_id": account.creator_id,
-            "name": account.name,
-            "layout": json.loads(account.layout)
-        }
+        return account.to_dict()
     return {"message": "Site account not found."}, 404
 
 
@@ -50,15 +53,22 @@ def update_site_account(user: User, id: int):
     account = current_app.site_account_service.get_site_account_by_id(id)
     if not account:
         return {"message": "Site account not found."}, 404
-    if not (
-            current_app.site_account_service.has_authority(user, account)
-            or user.role >= Role.MODERATOR.value
-    ):
+    if not current_app.site_account_service.has_authority(user, account):
         return {"message": "You do not have permission to edit this site account."}, 401
-    name = request.get_json().get("name") or None
-    layout = request.get_json().get("layout") or None
-    if current_app.site_account_service.modify_site_account(account, name, layout):
-        return {"message": "Site account updated."}, 200
+    data = request.get_json()
+    if "creator_id" in data and current_app.user_service.get_user(data["creator_id"]) is None:
+        return {"error": "not_found", "message": "User not found."}, 404
+    fields = {key: data[key] for key in (
+        "name", "layout", "picture", "banner", "colors", "contact", "description", "visible", "creator_id"
+    ) if key in data}
+    try:
+        if current_app.site_account_service.modify_site_account(account, **fields):
+            return {"message": "Site account updated."}, 200
+    except ValueError as exc:
+        return {"error": "validation", "message": str(exc)}, 422
+    except IntegrityError:
+        db.session.rollback()
+        return {"error": "validation", "message": "Site account name is already in use."}, 422
     return {"message": "Failed to update site account."}, 500
 
 
@@ -70,13 +80,14 @@ def delete_site_account(user: User, id: int):
     account = current_app.site_account_service.get_site_account_by_id(id)
     if not account:
         return {"message": "Site account not found."}, 404
-    if not (
-            current_app.site_account_service.has_authority(user, account)
-            or user.role >= Role.MODERATOR.value
-    ):
+    if not current_app.site_account_service.has_authority(user, account):
         return {"message": "You do not have permission to delete this site account."}, 401
-    if current_app.site_account_service.delete_site_account(account):
-        return {"message": "Site account deleted."}, 200
+    try:
+        if current_app.site_account_service.delete_site_account(account):
+            return {"message": "Site account deleted."}, 200
+    except IntegrityError:
+        db.session.rollback()
+        return {"error": "validation", "message": "Site account still owns events."}, 422
     return {"message": "Failed to delete site account."}, 500
 
 
@@ -127,6 +138,8 @@ def update_site_account_application(user: User, id: int):
     sources = request.get_json().get("sources") or None
     contact = request.get_json().get("contact") or None
     application = current_app.site_account_service.get_application_by_id(id)
+    if application is None:
+        return {"error": "not_found", "message": "Application not found."}, 404
     if application.requestor_id == user.id or user.role >= Role.MODERATOR.value:
         if current_app.site_account_service.modify_application(application, artist_name, account_name, reason, sources,
                                                                contact):

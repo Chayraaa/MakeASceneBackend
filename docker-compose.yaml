@@ -36,9 +36,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: makeascene
+      PGDATA: /var/lib/postgresql/data/pgdata
 
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
 
   minio:
     image: minio/minio:latest
@@ -49,7 +50,15 @@ services:
       - normal.env
       - secrets.env
 
-    command: server /data --console-address ":9001"
+    # env_file values are available inside the container, not for Compose's
+    # variable interpolation. Use the same credentials as the backend.
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        export MINIO_ROOT_USER="$${S3_ACCESS_KEY:?S3_ACCESS_KEY must be set}"
+        export MINIO_ROOT_PASSWORD="$${S3_SECRET_KEY:?S3_SECRET_KEY must be set}"
+        exec minio server /data --console-address ":9001"
     volumes:
       - minio_data:/data
 
@@ -95,6 +104,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
 
   grafana:
     image: grafana/grafana:latest

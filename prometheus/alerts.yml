@@ -1,0 +1,32 @@
+groups:
+  - name: makeascene
+    rules:
+      - alert: BackendScrapeDown
+        expr: (up{job="makeascene-backend"} == 0) or absent(up{job="makeascene-backend"})
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Backend metrics target is unreachable
+      - alert: BackendOperationErrors
+        expr: sum by (service, operation) (increase(backend_operations_total{result="error"}[10m])) >= 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Repeated backend operation failures
+          description: Inspect operation outcomes and latency in the Make A Scene dashboard.
+      - alert: EventWriteFailures
+        expr: sum by (operation) (increase(backend_operations_total{service="event",operation=~"create|update",result="rejected"}[10m])) >= 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Repeated rejected event writes
+      - alert: LocationResolutionFailures
+        expr: sum(increase(location_resolution_total{source="unresolved"}[10m])) >= 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Locations repeatedly have no usable geometry

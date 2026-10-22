@@ -6,8 +6,8 @@ class InMemoryImageStorage:
         self.bucket = bucket
         self._store = {}  # key -> bytes
 
-    def save_image(self, key: str, image_data: BinaryIO) -> str:
-        self._store[key] = image_data.read()
+    def save_image(self, key: str, image_data: BinaryIO, mime: str = "application/octet-stream") -> str:
+        self._store[key] = (image_data.read(), mime)
         return key
 
     def get_image(self, key: str):

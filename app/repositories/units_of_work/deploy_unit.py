@@ -1,10 +1,16 @@
 import os
 
 from app.extensions import db, typesense_client, typesense_init_client
+from app.repositories.interfaces.storage.events.event_repo_protocol import EventRepoProtocol
+from app.repositories.storage.events.sql_event_repo import SqlEventRepo
+from app.repositories.external.location_repo import LocationRepo
 from app.repositories.external.resend_email_repo import ResendEmailRepo
+from app.repositories.external.search_engine.typesense_location_search_repo import TypesenseLocationSearchRepo
 from app.repositories.external.search_engine.typesense_site_account_search_repo import TypesenseSiteAccountSearchRepo
 from app.repositories.external.search_engine.typesense_tag_search_repo import TypesenseTagSearchRepo
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
+from app.repositories.interfaces.external.location_protocol import LocationProtocol
+from app.repositories.interfaces.external.search_engine_location_protocol import SearchEngineLocationProtocol
 
 from app.repositories.interfaces.external.search_engine_site_account_protocol import SearchEngineSiteAccountProtocol
 from app.repositories.interfaces.external.search_engine_tag_protocol import SearchEngineTagProtocol
@@ -12,6 +18,7 @@ from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import
 from app.repositories.interfaces.storage.image_storage_protocol import ImageStorageProtocol
 from app.repositories.interfaces.storage.auth.password_reset_token_repo_protocol import PasswordResetTokenRepoProtocol
 from app.repositories.interfaces.storage.auth.refresh_token_repo_protocol import RefreshTokenRepoProtocol
+from app.repositories.interfaces.storage.location_storage_protocol import LocationStorageProtocol
 from app.repositories.interfaces.storage.site_account.site_account_application_repo_protocol import \
     SiteAccountApplicationRepoProtocol
 from app.repositories.interfaces.storage.site_account.site_account_repo_protocol import SiteAccountRepoProtocol
@@ -25,6 +32,7 @@ from app.repositories.storage.auth.sql_password_reset_token_repo import SqlPassw
 from app.repositories.storage.auth.sql_refresh_token_repo import SqlRefreshTokenRepo
 from app.repositories.storage.site_account.sql_site_account_application_repo import SqlSiteAccountApplicationRepo
 from app.repositories.storage.site_account.sql_site_account_repo import SqlSiteAccountRepo
+from app.repositories.storage.sql_location_repo import SQLLocationRepo
 from app.repositories.storage.sql_user_repo import SqlUserRepo
 from app.repositories.storage.tags.sql_blocked_tag_repo import SqlBlockedTagRepo
 from app.repositories.storage.tags.sql_saved_tag_repo import SqlSavedTagRepo
@@ -36,6 +44,7 @@ from app.repositories.storage.tags.sql_tag_repo import SqlTagRepo
 # they need to have the same variable names.
 class DeployUnitOfWork:
     def __init__(self):
+        self.event_repo: EventRepoProtocol = SqlEventRepo(db.session)
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)
         self.image_storage: ImageStorageProtocol = S3ImageStorage(os.environ.get("S3_BUCKET_NAME", "images"))
         self.refresh_token_repo: RefreshTokenRepoProtocol = SqlRefreshTokenRepo(db.session)
@@ -51,3 +60,7 @@ class DeployUnitOfWork:
         self.site_account_repo: SiteAccountRepoProtocol = SqlSiteAccountRepo(db.session)
         self.site_account_application_repo: SiteAccountApplicationRepoProtocol = SqlSiteAccountApplicationRepo(
             db.session)
+        self.location_search_engine: SearchEngineLocationProtocol = TypesenseLocationSearchRepo(
+            typesense_client)
+        self.location_api_repo: LocationProtocol = LocationRepo()
+        self.location_storage: LocationStorageProtocol = SQLLocationRepo(db.session)

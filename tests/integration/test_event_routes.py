@@ -1,0 +1,297 @@
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+from unittest.mock import Mock
+
+import pytest
+from jsonschema import Draft202012Validator, FormatChecker
+from referencing import Registry, Resource
+from referencing.jsonschema import DRAFT202012
+import yaml
+
+from app.domain_models.events.event import Event
+from app.domain_models.user import Role
+from app.repositories.storage.site_account.sql_site_account_repo import SqlSiteAccountRepo
+from app.repositories.storage.sql_user_repo import SqlUserRepo
+from app.database_models.tags.tag_model import TagModel
+from app.domain_models.Location import Location
+from app.services.event_service import EventService
+from app.services.password_service import PasswordService
+
+
+@pytest.fixture
+def api(app, session):
+    app.config["SERVER_NAME"] = "127.0.0.1:5000"
+    users = SqlUserRepo(session)
+    actors = {}
+    for name, role in [("owner", 0), ("stranger", 0), ("collaborator", 0), ("moderator", 1), ("admin", 2)]:
+        assert users.create_user(f"{name}@example.com", "test-hash")
+        actor = users.get_user_by_email(f"{name}@example.com")
+        actor.role = role
+        users.update_user(actor)
+        actors[name] = actor
+    sites = SqlSiteAccountRepo(session)
+    assert sites.create_site_account("Foreign site", actors["stranger"])
+    assert sites.create_site_account("Owner site", actors["owner"])
+    assert sites.create_site_account("Collaborating site", actors["collaborator"])
+    owner = sites.get_site_account_by_name("Owner site")
+    collaborator = sites.get_site_account_by_name("Collaborating site")
+    foreign = sites.get_site_account_by_name("Foreign site")
+    app.site_account_service.search_engine = Mock()
+    app.tag_service.search_engine_repo = Mock()
+    tag = TagModel(name="Music")
+    session.add(tag)
+    session.commit()
+    start = datetime(2026, 10, 22, 18, tzinfo=timezone.utc)
+    value = Event(
+        id=123, name="Community concert", description="Live music", from_=start,
+        till=start + timedelta(hours=2), tags=[tag.id], place_id="venue", layout=1,
+        data=[{"image": "https://example.com/event.png"}], detail_data=[],
+        owner_id=owner.id, collaborators=[collaborator.id], access=["wheelchair"],
+    )
+    app.event_service = Mock(spec=EventService)
+    app.event_service.get_event_by_id.side_effect = lambda event_id: value if event_id == value.id else None
+    app.event_service.create_event.return_value = True
+    app.event_service.update_event.return_value = True
+    app.event_service.remove_event.return_value = True
+    app.event_service.query_events.return_value = [value]
+    app.location_service = Mock()
+    app.location_service.get_location_data.return_value = Location(
+        id=1, place_id="venue", details='{"name": "Concert hall"}', geometry=None,
+    )
+    return SimpleNamespace(
+        app=app, client=app.test_client(), users=users, actors=actors, sites=sites, owner=owner,
+        collaborator=collaborator, foreign=foreign, event=value, service=app.event_service,
+    )
+
+
+def authorization(api, actor="owner"):
+    return {"Authorization": "Bearer " + PasswordService.generate_access_token(api.actors[actor].id)}
+
+
+def event_payload(api):
+    result = api.event.to_dict()
+    result.pop("id")
+    result.pop("repeating")
+    return result
+
+
+def assert_schema(api, response, name):
+    with open(api.app.root_path + "/static/makeascene.openapi.yaml", encoding="utf-8") as source:
+        spec = yaml.safe_load(source)
+    registry = Registry().with_resource("urn:test-api", Resource(spec, DRAFT202012))
+    Draft202012Validator(
+        {"$ref": f"urn:test-api#/components/schemas/{name}"}, registry=registry,
+        format_checker=FormatChecker(),
+    ).validate(response.get_json())
+
+
+@pytest.mark.parametrize("actor, expected", [("owner", 201), ("stranger", 401), ("collaborator", 401),
+                                            ("moderator", 201), ("admin", 201)])
+def test_create_event_permission(api, actor, expected):
+    response = api.client.post("/v1/event", json=event_payload(api), headers=authorization(api, actor))
+    assert response.status_code == expected, response.get_json()
+    assert api.service.create_event.called == (expected == 201)
+    if expected == 201:
+        created = api.service.create_event.call_args.args[0]
+        assert created.owner_id == api.owner.id
+        assert created.collaborators == [api.collaborator.id]
+        assert created.from_ == api.event.from_
+
+
+@pytest.mark.parametrize("method", ["patch", "delete"])
+@pytest.mark.parametrize("actor, expected", [("owner", 200), ("stranger", 401), ("collaborator", 401),
+                                            ("moderator", 200), ("admin", 200)])
+def test_event_write_permission(api, method, actor, expected):
+    kwargs = {"json": {"name": "Changed"}} if method == "patch" else {}
+    response = getattr(api.client, method)(
+        "/v1/event/123", headers=authorization(api, actor), **kwargs,
+    )
+    assert response.status_code == expected, response.get_json()
+    write = api.service.update_event if method == "patch" else api.service.remove_event
+    assert write.called == (expected == 200)
+
+
+@pytest.mark.parametrize("actor, expected", [("owner", 401), ("stranger", 401), ("moderator", 200), ("admin", 200)])
+def test_event_transfer_requires_access_to_both_sites(api, actor, expected):
+    response = api.client.patch(
+        "/v1/event/123", json={"owner-id": api.foreign.id}, headers=authorization(api, actor),
+    )
+    assert response.status_code == expected
+    assert api.service.update_event.called == (expected == 200)
+
+
+def test_event_public_read_matches_spec(api):
+    response = api.client.get("/v1/event/123")
+    assert response.status_code == 200, response.get_json()
+    assert_schema(api, response, "EventObject")
+    assert response.json["owner-name"] == api.owner.name
+    assert response.json["place-data"] == {"name": "Concert hall"}
+    assert response.json["collaborators"][0]["collaborator-name"] == api.collaborator.name
+    assert api.client.get("/v1/event/999").status_code == 404
+
+
+def test_event_query_maps_spec_parameters(api):
+    response = api.client.get("/v1/event", headers=authorization(api), query_string=[
+        ("included_tags", "1"), ("included_tags", "2"), ("excluded_tags", "3"),
+        ("access", "wheelchair"), ("name", "Concert"),
+        ("from", "2026-10-22T18:00:00Z"), ("till", "2026-10-22T22:00:00Z"),
+        ("place-id", "berlin"), ("long", "13.4"), ("lat", "52.5"), ("radius", "1000"),
+        ("include-no-tag-matches", "true"), ("organisers", str(api.owner.id)), ("page", "2"), ("size", "5"),
+    ])
+    assert response.status_code == 200, response.get_json()
+    query = api.service.query_events.call_args.args[0]
+    assert query.included_tags == [1, 2] and query.excluded_tags == [3]
+    assert query.organizer_ids == [api.owner.id]
+    assert query.access == ["wheelchair"] and query.name == "Concert"
+    assert query.place_id == "berlin" and query.longitude == 13.4 and query.latitude == 52.5
+    assert query.radius_m == 1000 and query.include_partial
+    assert query.from_.tzinfo is not None
+    assert api.service.query_events.call_args.kwargs == {"page": 2, "page_size": 5}
+    for value in response.json:
+        single_response = SimpleNamespace(get_json=lambda: value)
+        assert_schema(api, single_response, "EventObject")
+
+
+@pytest.mark.parametrize("method, path", [("post", "/v1/event"), ("patch", "/v1/event/123"),
+                                         ("delete", "/v1/event/123"), ("get", "/v1/event")])
+def test_event_requires_authentication(api, method, path):
+    response = getattr(api.client, method)(path, json={})
+    assert response.status_code == 401
+    api.service.create_event.assert_not_called()
+    api.service.update_event.assert_not_called()
+    api.service.remove_event.assert_not_called()
+    api.service.query_events.assert_not_called()
+
+
+@pytest.mark.parametrize("changes", [{"layout": "invalid"}, {"owner-id": "invalid"},
+                                     {"from": "invalid"}, {"collaborators": ["invalid"]}])
+def test_event_request_validation(api, changes):
+    response = api.client.post("/v1/event", json={**event_payload(api), **changes}, headers=authorization(api))
+    assert response.status_code == 422, response.get_json()
+    api.service.create_event.assert_not_called()
+
+
+def test_missing_event_and_site_references(api):
+    for method in ("patch", "delete"):
+        response = getattr(api.client, method)("/v1/event/999", json={}, headers=authorization(api))
+        assert response.status_code == 404
+    for field, value in [("owner-id", 999), ("tags", [999]), ("collaborators", [999])]:
+        response = api.client.post(
+            "/v1/event", json={**event_payload(api), field: value}, headers=authorization(api),
+        )
+        assert response.status_code == 404, response.get_json()
+    api.service.create_event.assert_not_called()
+
+
+def test_site_account_details_images_and_empty_updates(api):
+    path = f"/v1/site_accounts/{api.owner.id}"
+    response = api.client.patch(path, headers=authorization(api), json={
+        "picture": "data:image/png;base64,aGVsbG8=", "banner": "data:image/png;base64,aGVsbG8=",
+        "colors": ["#123456"], "contact": [{"type": "email", "adress": "hello@example.com"}],
+        "description": "About the organizer", "visible": False,
+    })
+    assert response.status_code == 200, response.get_json()
+    response = api.client.get(path)
+    assert_schema(api, response, "SiteAccount")
+    assert response.json["picture"].startswith("http://127.0.0.1:5000/v1/image/site_account/")
+    assert response.json["banner"].startswith("http://127.0.0.1:5000/v1/image/site_account/")
+    assert response.json["contact"] == [{"type": "email", "adress": "hello@example.com"}]
+    assert response.json["colors"] == ["#123456"] and response.json["visible"] is False
+    response = api.client.patch(path, headers=authorization(api), json={
+        "picture": "https://example.com/picture.png", "banner": "https://example.com/banner.png",
+        "colors": [], "contact": [], "layout": [], "description": "", "visible": True,
+    })
+    assert response.status_code == 200
+    result = api.client.get(path).json
+    assert result["picture"] == "https://example.com/picture.png"
+    assert result["banner"] == "https://example.com/banner.png"
+    assert result["colors"] == result["contact"] == result["layout"] == []
+    assert result["description"] == "" and result["visible"] is True
+
+
+@pytest.mark.parametrize("actor, expected", [("owner", 200), ("stranger", 401), ("moderator", 200), ("admin", 200)])
+def test_site_account_update_permissions(api, actor, expected):
+    response = api.client.patch(
+        f"/v1/site_accounts/{api.owner.id}", json={"description": "Changed"}, headers=authorization(api, actor),
+    )
+    assert response.status_code == expected
+
+
+def test_site_creator_transfer_and_missing_creator(api):
+    path = f"/v1/site_accounts/{api.owner.id}"
+    response = api.client.patch(path, json={"creator_id": 999}, headers=authorization(api))
+    assert response.status_code == 404
+    response = api.client.patch(path, json={"creator_id": api.actors["stranger"].id}, headers=authorization(api))
+    assert response.status_code == 200
+    response = api.client.patch(path, json={"name": "No longer mine"}, headers=authorization(api))
+    assert response.status_code == 401
+
+
+def test_site_account_creation_is_moderator_only(api):
+    payload = {"name": "New site", "creator_id": api.actors["owner"].id}
+    assert api.client.post("/v1/site_accounts", json=payload, headers=authorization(api)).status_code == 401
+    response = api.client.post("/v1/site_accounts", json=payload, headers=authorization(api, "admin"))
+    assert response.status_code == 200, response.get_json()
+    created = api.sites.get_site_account_by_name("New site")
+    assert created.creator_id == api.actors["owner"].id
+    assert_schema(api, api.client.get(f"/v1/site_accounts/{created.id}"), "SiteAccount")
+
+
+@pytest.mark.parametrize("method", ["post", "patch"])
+def test_event_tag_names_are_created_indexed_and_reused(api, method):
+    existing_id = api.event.tags[0]
+    payload = {"tags": [existing_id, "New tag", "123", "New tag", "Music"]}
+    if method == "post":
+        payload = {**event_payload(api), **payload}
+    path = "/v1/event" if method == "post" else "/v1/event/123"
+    write = api.service.create_event if method == "post" else api.service.update_event
+    response = getattr(api.client, method)(path, json=payload, headers=authorization(api))
+    assert response.status_code == (201 if method == "post" else 200), response.json
+    tags = api.app.tag_service.tag_repo
+    new = tags.get_tag_by_name("New tag")
+    numeric = tags.get_tag_by_name("123")
+    assert new is not None and numeric is not None
+    assert new.parent is None and numeric.parent is None
+    assert write.call_args.args[0].tags == [existing_id, new.id, numeric.id]
+    search = api.app.tag_service.search_engine_repo
+    assert {args.args[0].name for args in search.add_tag.call_args_list} == {"New tag", "123"}
+    assert search.add_tag.call_count == 2
+    # A repeated request must not duplicate tags or index them again.
+    response = getattr(api.client, method)(path, json=payload, headers=authorization(api))
+    assert response.status_code == (201 if method == "post" else 200)
+    assert search.add_tag.call_count == 2
+
+
+@pytest.mark.parametrize("actor, changes, expected", [
+    ("stranger", {}, 401),
+    ("owner", {"collaborators": [999]}, 404),
+    ("owner", {"tags": ["Should not be created", 999]}, 404),
+    ("owner", {"tags": ["Should not be created", "   "]}, 422),
+])
+def test_invalid_or_unauthorized_event_does_not_create_tags(api, actor, changes, expected):
+    payload = {**event_payload(api), "tags": ["Should not be created"], **changes}
+    response = api.client.post("/v1/event", json=payload, headers=authorization(api, actor))
+    assert response.status_code == expected, response.json
+    assert api.app.tag_service.tag_repo.get_tag_by_name("Should not be created") is None
+    api.app.tag_service.search_engine_repo.add_tag.assert_not_called()
+    api.service.create_event.assert_not_called()
+
+
+def test_create_art_event_with_only_new_tag_names(api):
+    names = ["Art", "Illustration", "Community", "Queer"]
+    payload = {
+        **event_payload(api),
+        "name": "Colors & Characters – Community Art Night",
+        "description": "Ein kreativer Abend rund um digitale Illustration, Charakterdesign und queere Kunst.",
+        "from": "2026-11-14T18:00:00+01:00",
+        "till": "2026-11-14T23:00:00+01:00",
+        "tags": names,
+    }
+    response = api.client.post("/v1/event", json=payload, headers=authorization(api))
+    assert response.status_code == 201, response.json
+    created_tags = [api.app.tag_service.tag_repo.get_tag_by_name(name) for name in names]
+    assert all(tag is not None and tag.parent is None for tag in created_tags)
+    saved_event = api.service.create_event.call_args.args[0]
+    assert saved_event.tags == [tag.id for tag in created_tags]
+    assert saved_event.from_.utcoffset() == timedelta(hours=1)
+    assert api.app.tag_service.search_engine_repo.add_tag.call_count == 4

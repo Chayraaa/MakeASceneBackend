@@ -13,6 +13,7 @@ class TagModel(db.Model):
 
     saved_tags = relationship("SavedTagModel", back_populates="tag", cascade="all, delete-orphan")
     blocked_tags = relationship("BlockedTagModel", back_populates="tag", cascade="all, delete-orphan")
+    events = relationship("EventModel", secondary="event_tags", back_populates="tags")
     children = relationship("TagModel", back_populates="parent")
     parent = relationship(
         "TagModel",

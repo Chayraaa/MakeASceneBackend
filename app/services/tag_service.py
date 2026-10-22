@@ -35,6 +35,33 @@ class TagService:
             tags = self.search_engine_repo.search_with_embedding(query)
         return tags
 
+    def resolve_tags(self, values: list[int | str]) -> list[int]:
+        """Resolve IDs and create named tags through the usual indexing flow.
+
+        Strings, including numeric strings, are names. New tags have no parent.
+        Existing names are reused without changing their parents.
+        """
+        for value in values:
+            if isinstance(value, str):
+                if not value.strip():
+                    raise ValueError("Tag names must not be empty")
+            elif type(value) is not int or self.tag_repo.get_tag_by_id(value) is None:
+                raise ValueError(f"Unknown tag ID: {value}")
+        resolved = []
+        for value in values:
+            if isinstance(value, str):
+                name = value.strip()
+                tag = self.tag_repo.get_tag_by_name(name)
+                if tag is None:
+                    self.create_tag(name)
+                    tag = self.tag_repo.get_tag_by_name(name)
+                if tag is None:
+                    raise ValueError(f"Could not create tag: {name}")
+                resolved.append(tag.id)
+            else:
+                resolved.append(value)
+        return list(dict.fromkeys(resolved))
+
     def autocomplete(self, query: str, page: int) -> list[Tag]:
         with tag_metrics.tag_autocomplete_duration.time():
             tags = self.search_engine_repo.search_by_semantic(query, page)

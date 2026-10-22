@@ -9,6 +9,7 @@ from enum import Enum
 _multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_multiproc")
 os.makedirs(_multiproc_dir, exist_ok=True)
 os.environ["PROMETHEUS_MULTIPROC_DIR"] = _multiproc_dir
+from app.services.location_service import LocationService
 from functools import wraps
 from time import sleep
 
@@ -21,12 +22,15 @@ from openapi_core.contrib.flask import FlaskOpenAPIRequest
 from openapi_core.exceptions import OpenAPIError
 from openapi_core.validation.request.exceptions import InvalidRequestBody
 from openapi_core.validation.schemas.exceptions import InvalidSchemaValue
+from sqlalchemy.engine import make_url
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.domain_models.user import Role
 from app.repositories.units_of_work.deploy_unit import DeployUnitOfWork
 from app.repositories.units_of_work.test_unit import TestUnitOfWork
 from app.services.auth_service import AuthService
 from app.services.image_service import ImageService
+from app.services.event_service import EventService
 from app.services.password_service import PasswordService
 from app.services.google_oauth_service import GoogleOauthService
 from app.services.site_account_service import SiteAccountService
@@ -34,7 +38,6 @@ from app.services.tag_service import TagService
 from app.services.user_service import UserService
 from app.extensions import db, migrate
 from openapi_core import OpenAPI
-import typesense
 from app.extensions import typesense_client
 
 # Add all the db database_models here
@@ -49,6 +52,8 @@ from app.database_models.site_account.site_account_model import SiteAccountModel
 from app.database_models.site_account.site_account_application_model import SiteAccountApplicationModel
 from app.database_models.site_account.site_account_application_contact_model import SiteAccountApplicationContactModel
 from app.database_models.site_account.site_account_application_sources_model import SiteAccountApplicationSourcesModel
+from app.database_models.location_model import LocationModel
+from app.database_models.events.event_model import EventModel
 
 # Open API file path
 open_api_file_name = "makeascene.openapi.yaml"
@@ -88,11 +93,26 @@ def setup_oauth(app: Flask):
 
 
 def setup_database(app: Flask):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("SQLALCHEMY_DATABASE_URI",
-                                                           "postgresql+psycopg2://user:password@localhost:5432/mydb")
+    uri = os.environ.get("SQLALCHEMY_DATABASE_URI")
+    if not uri:
+        raise RuntimeError("SQLALCHEMY_DATABASE_URI is not set")
+
+    url = make_url(uri)
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    app.logger.info(f"Connecting to database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    if url.get_backend_name() == "postgresql":
+        app.config.setdefault('SQLALCHEMY_ENGINE_OPTIONS', {
+            "pool_size": 2,
+            "max_overflow": 3,
+            "pool_pre_ping": True,
+        })
+
+    app.logger.info(
+        "Connecting to database: %s",
+        url.render_as_string(hide_password=True),
+    )
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -125,6 +145,8 @@ def setup_services(app: Flask):
                                  unit_of_work.blocked_tag_repo, unit_of_work.tag_search_engine)
     app.site_account_service = SiteAccountService(unit_of_work.site_account_repo,
                                                   unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo)
+    app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo, unit_of_work.location_storage)
+    app.event_service = EventService(unit_of_work.event_repo, app.location_service, app.image_service)
 
 
 # Add all the routes here (see health as example)
@@ -141,6 +163,10 @@ def setup_routes(app: Flask):
     app.register_blueprint(tags, url_prefix="/v1/tags")
     from .routes.site_account import site_account
     app.register_blueprint(site_account, url_prefix="/v1/site_accounts")
+    from .routes.location import location
+    app.register_blueprint(location, url_prefix="/v1/location")
+    from .routes.event import events
+    app.register_blueprint(events, url_prefix="/v1/event")
 
 
 ########################
@@ -154,7 +180,6 @@ def login_required(role: Role = Role.USER):
 
             # Get the token from the Authorization header
             token = request.headers.get("Authorization")
-            print(request.headers)
             if not token:
                 return jsonify({"error": "Token missing"}), 401
 
@@ -173,7 +198,8 @@ def login_required(role: Role = Role.USER):
             user = current_app.user_service.get_user(user_id)
             if not user:
                 return jsonify({"error": "User not found"}), 404
-            if user.role < role.value:
+            rank = user.role.value if isinstance(user.role, Role) else user.role
+            if rank < role.value:
                 return jsonify({"error": "Insufficient permissions"}), 401
 
             # Return the user object to the route handler
@@ -270,6 +296,12 @@ def setup_prometheus(app):
 # Here everything for app creation is inited.
 def create_app(testing: bool = False):
     app = Flask(__name__)
+
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app,
+        x_proto=1,
+    )
+
     CORS(app)
     load_dotenv("normal.env")
     load_dotenv("secrets.env")

@@ -1,6 +1,8 @@
 import os
 
 from app.extensions import db, typesense_client, typesense_init_client
+from app.repositories.interfaces.storage.events.event_repo_protocol import EventRepoProtocol
+from app.repositories.storage.events.sql_event_repo import SqlEventRepo
 from app.repositories.external.location_repo import LocationRepo
 from app.repositories.external.resend_email_repo import ResendEmailRepo
 from app.repositories.external.search_engine.typesense_location_search_repo import TypesenseLocationSearchRepo
@@ -42,6 +44,7 @@ from app.repositories.storage.tags.sql_tag_repo import SqlTagRepo
 # they need to have the same variable names.
 class DeployUnitOfWork:
     def __init__(self):
+        self.event_repo: EventRepoProtocol = SqlEventRepo(db.session)
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)
         self.image_storage: ImageStorageProtocol = S3ImageStorage(os.environ.get("S3_BUCKET_NAME", "images"))
         self.refresh_token_repo: RefreshTokenRepoProtocol = SqlRefreshTokenRepo(db.session)

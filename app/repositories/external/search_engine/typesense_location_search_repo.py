@@ -1,4 +1,5 @@
 import threading
+from typesense.exceptions import ObjectNotFound
 
 _lock = threading.Lock()
 _initialized = False
@@ -7,6 +8,13 @@ _initialized = False
 class TypesenseLocationSearchRepo:
     def __init__(self, client):
         self.client = client
+
+    def get_location_by_place_id(self, place_id: str) -> dict | None:
+        self._ensure_ready()
+        try:
+            return self.client.collections["locations"].documents[place_id].retrieve()
+        except ObjectNotFound:
+            return None
 
     def _ensure_ready(self):
         global _initialized

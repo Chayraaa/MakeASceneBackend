@@ -1,4 +1,5 @@
 import base64
+import binascii
 from io import BytesIO
 from uuid import uuid4
 
@@ -7,11 +8,17 @@ from app.domain_models.site_account.SiteAccount import SiteAccount
 
 
 def base64_to_binary_io(data_url: str):
-    header, b64_data = data_url.split(",", 1)
-
-    mime = header.split(";")[0].replace("data:", "")
-
-    return mime, BytesIO(base64.b64decode(b64_data))
+    try:
+        header, b64_data = data_url.split(",", 1)
+        if not header.startswith("data:image/") or not header.endswith(";base64"):
+            raise ValueError("Expected a base64 image data URL")
+        mime = header[5:].split(";", 1)[0]
+        binary = base64.b64decode(b64_data, validate=True)
+        if not binary:
+            raise ValueError("Image must not be empty")
+        return mime, BytesIO(binary)
+    except (ValueError, binascii.Error) as exc:
+        raise ValueError("Invalid base64 image data URL") from exc
 
 
 class ImageService:
@@ -24,6 +31,23 @@ class ImageService:
         return self.storage.get_image(key)
 
     def save_site_account_image(self, image_data: str, site_account: SiteAccount) -> str:
-        mime, image_data = base64_to_binary_io(image_data)
-        key = self.storage.save_image(f"site_account/{site_account.id}/{uuid4()}", image_data, mime)
+        return self._save_image(image_data, f"site_account/{site_account.id}")
+
+    def _save_image(self, image_data: str, prefix: str) -> str:
+        if image_data.startswith(("https://", "http://")):
+            return image_data
+        mime, binary = base64_to_binary_io(image_data)
+        key = self.storage.save_image(f"{prefix}/{uuid4()}", binary, mime)
         return f"{self.base_url}/{self.image_path}/{key}"
+
+    def save_event_image(self, image_data: str) -> str:
+        return self._save_image(image_data, "events")
+
+    def replace_event_images(self, data):
+        if isinstance(data, dict):
+            return {key: self.replace_event_images(value) for key, value in data.items()}
+        if isinstance(data, list):
+            return [self.replace_event_images(value) for value in data]
+        if isinstance(data, str) and data.startswith("data:image/"):
+            return self.save_event_image(data)
+        return data

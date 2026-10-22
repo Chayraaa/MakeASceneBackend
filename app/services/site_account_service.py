@@ -59,17 +59,41 @@ class SiteAccountService:
     def get_site_account_by_id(self, site_account_id: int) -> SiteAccount | None:
         return self.site_account_repo.get_site_account_by_id(site_account_id)
 
-    def modify_site_account(self, site_account: SiteAccount, name: str | None = None, layout: list | None = None):
-        if name:
+    def modify_site_account(self, site_account: SiteAccount, name: str | None = None, layout: list | None = None,
+                            profile_picture: str | None = None, *, picture: str | None = None,
+                            banner: str | None = None, colors: list[str] | None = None,
+                            contact: list[dict[str, str]] | None = None, description: str | None = None,
+                            visible: bool | None = None, creator_id: int | None = None):
+        if name is not None:
             site_account.name = name
-        if layout:
+        if picture is not None:
+            profile_picture = picture
+        if profile_picture is not None:
+            site_account.profile_picture = (
+                self.image_service.save_site_account_image(profile_picture, site_account) if profile_picture else None
+            )
+        if layout is not None:
             image_count = [0]
             with site_account_metrics.site_account_image_processing_duration.time():
                 layout = self._replace_images(layout, site_account, image_count)
             site_account_metrics.site_account_layout_image_count.observe(image_count[0])
             site_account.layout = json.dumps(layout)
+        if banner is not None:
+            site_account.banner = self.image_service.save_site_account_image(banner, site_account) if banner else ""
+        if colors is not None:
+            site_account.colors = colors
+        if contact is not None:
+            site_account.contact = contact
+        if description is not None:
+            site_account.description = description
+        if visible is not None:
+            site_account.visible = visible
+        if creator_id is not None:
+            site_account.creator_id = creator_id
+        if not self.site_account_repo.update_site_account(site_account):
+            return False
         self.search_engine.update_site_account(site_account)
-        return self.site_account_repo.update_site_account(site_account)
+        return True
 
     def delete_site_account(self, site_account: SiteAccount):
         if self.site_account_repo.remove_site_account(site_account):
@@ -112,8 +136,11 @@ class SiteAccountService:
             results = self.search_engine.search_by_semantic(query, page)
             found = []
             for result in results:
-                found.append(self.get_site_account_by_id(result.id))
+                account = self.get_site_account_by_id(result.id)
+                if account is not None and account.visible:
+                    found.append(account)
         return found
 
     def has_authority(self, user: User, site_account: SiteAccount):
-        return user.id == site_account.creator_id or user.role == Role.MODERATOR
+        rank = user.role.value if isinstance(user.role, Role) else user.role
+        return user.id == site_account.creator_id or rank >= Role.MODERATOR.value

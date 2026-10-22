@@ -1,5 +1,6 @@
 import threading
 from typesense.exceptions import ObjectNotFound
+from app.metrics.operation_metrics import monitored
 
 _lock = threading.Lock()
 _initialized = False
@@ -9,6 +10,7 @@ class TypesenseLocationSearchRepo:
     def __init__(self, client):
         self.client = client
 
+    @monitored("location_cache", "get")
     def get_location_by_place_id(self, place_id: str) -> dict | None:
         self._ensure_ready()
         try:
@@ -53,6 +55,7 @@ class TypesenseLocationSearchRepo:
             ]
         })
 
+    @monitored("location_cache", "upsert")
     def add_location(self, location: dict) -> dict:
         self._ensure_ready()
 
@@ -92,6 +95,7 @@ class TypesenseLocationSearchRepo:
 
         return doc
 
+    @monitored("location_cache", "autocomplete")
     def autocomplete_location(self, query: str) -> list[dict]:
         self._ensure_ready()
         search_parameters = {

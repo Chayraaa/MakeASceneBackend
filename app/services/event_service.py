@@ -1,4 +1,5 @@
 from copy import deepcopy
+from app.metrics.operation_metrics import monitored
 
 from app.domain_models.events.event import Event
 from app.domain_models.events.event_query import EventQuery
@@ -26,6 +27,7 @@ class EventService:
         prepared.detail_data = self.image_service.replace_event_images(prepared.detail_data)
         return prepared
 
+    @monitored("event", "create")
     def create_event(self, event: Event) -> bool:
         prepared = self._prepare(event)
         if not self.event_repo.create_event(prepared):
@@ -35,9 +37,11 @@ class EventService:
         event.detail_data = prepared.detail_data
         return True
 
+    @monitored("event", "get")
     def get_event_by_id(self, event_id: int) -> Event | None:
         return self.event_repo.get_event_by_id(event_id)
 
+    @monitored("event", "update")
     def update_event(self, event: Event) -> bool:
         if event.id is None or self.event_repo.get_event_by_id(event.id) is None:
             return False
@@ -48,9 +52,11 @@ class EventService:
         event.detail_data = prepared.detail_data
         return True
 
+    @monitored("event", "delete")
     def remove_event(self, event: Event) -> bool:
         return self.event_repo.remove_event(event)
 
+    @monitored("event", "query")
     def query_events(self, query: EventQuery | None = None, page: int = 1, page_size: int = 25) -> list[Event]:
         if page < 1 or page_size < 1:
             raise ValueError("page and page_size must be positive")

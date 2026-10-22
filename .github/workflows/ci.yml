@@ -10,7 +10,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:18-alpine
+        image: postgis/postgis:18-3.6
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -26,6 +26,7 @@ jobs:
     env:
       PYTHONPATH: .
       TESTING: "true"
+      POSTGIS_TEST_DATABASE_URI: postgresql+psycopg2://postgres:postgres@localhost:5432/makeascene_test
 
     steps:
       - name: Checkout
@@ -43,3 +44,9 @@ jobs:
 
       - name: Run tests with coverage
         run: pytest -v --cov=app --cov-report=term --cov-report=xml --cov-fail-under=70
+
+      - name: Validate monitoring configuration
+        run: >-
+          docker run --rm --entrypoint promtool
+          -v "$PWD/prometheus:/etc/prometheus:ro"
+          prom/prometheus:latest check config /etc/prometheus/prometheus.yml

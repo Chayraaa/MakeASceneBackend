@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import Mock
 
 from geoalchemy2.shape import to_shape
@@ -86,3 +87,32 @@ def test_invalid_cached_coordinates_are_not_stored():
         search.get_location_by_place_id.return_value = coordinates
         assert LocationService(search, api, storage).get_location_data("invalid") is None
     storage.add_location.assert_not_called()
+
+
+@pytest.mark.parametrize('force,cached', [(False, []), (False, [{'id': 'cached'}]), (True, [{'id': 'cached'}])])
+def test_autocomplete_cache_and_force_api(force, cached):
+    search, storage, api = Mock(), Mock(), Mock()
+    search.autocomplete_location.return_value = cached
+    api.autocomplete_location.return_value = [{'place_id': 'new'}]
+    search.add_location.return_value = {'id': 'new'}
+    result = LocationService(search, api, storage).autocomplete_location('Berlin', force)
+    if force or not cached:
+        assert result == [{'id': 'new'}]
+        api.autocomplete_location.assert_called_once_with('Berlin')
+        search.add_location.assert_called_once_with({'place_id': 'new'})
+    else:
+        assert result == cached
+        api.autocomplete_location.assert_not_called()
+    if force:
+        search.autocomplete_location.assert_not_called()
+
+
+def test_concurrent_location_insert_returns_winning_record():
+    search, storage, api = Mock(), Mock(), Mock()
+    winner = Mock()
+    storage.get_location_by_place_id.side_effect = [None, winner]
+    storage.add_location.return_value = False
+    api.get_location_details.return_value = {'features': [{
+        'properties': {'name': 'Berlin'}, 'geometry': {'type': 'Point', 'coordinates': [13, 52]},
+    }]}
+    assert LocationService(search, api, storage).get_location_data('p') is winner

@@ -2,8 +2,6 @@ import logging
 import os
 from enum import Enum
 
-from app.services.location_service import LocationService
-
 # Must happen before any prometheus_client metric is instantiated (i.e. before
 # any metrics module is imported). prometheus_client switches to multiprocess
 # mode as soon as PROMETHEUS_MULTIPROC_DIR is set, and immediately tries to
@@ -11,6 +9,7 @@ from app.services.location_service import LocationService
 _multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_multiproc")
 os.makedirs(_multiproc_dir, exist_ok=True)
 os.environ["PROMETHEUS_MULTIPROC_DIR"] = _multiproc_dir
+from app.services.location_service import LocationService
 from functools import wraps
 from time import sleep
 

@@ -21,6 +21,7 @@ from app.database_models.location_model import LocationModel
 from app.database_models.site_account.site_account_model import SiteAccountModel
 from app.database_models.tags.tag_model import TagModel
 from app.database_models.user_model import UserModel
+from app.domain_models.Location import Location
 from app.domain_models.events.event import Event
 from app.domain_models.events.event_query import EventQuery
 from app.extensions import db
@@ -340,3 +341,26 @@ def test_site_account_details_migration_preserves_existing_account(postgis_sessi
         assert connection.exec_driver_sql("SELECT name, profile_picture FROM site_accounts").one() == (
             "Existing organizer", "https://example.com/profile.png",
         )
+
+
+def test_location_repository_crud(postgis_session):
+    repo = SQLLocationRepo(postgis_session)
+    assert repo.get_location(999) is None
+    assert repo.get_location_by_place_id('missing') is None
+    missing = Location(id=999, place_id='missing', details={}, geometry=None)
+    assert not repo.remove_location(missing)
+    assert not repo.update_location(missing)
+    location = Location(id=-1, place_id='test-place', details={'name': 'Berlin'},
+                        geometry=WKTElement('POINT(13 52)', srid=4326))
+    assert repo.add_location(location)
+    assert location.id > 0
+    assert not repo.add_location(location)
+    assert json.loads(repo.get_location(location.id).details) == {'name': 'Berlin'}
+    location.details = {'name': 'Updated'}
+    assert repo.update_location(location)
+    assert json.loads(repo.get_location_by_place_id('test-place').details) == {'name': 'Updated'}
+    location.details = '{"name": "Serialized"}'
+    assert repo.update_location(location)
+    assert json.loads(repo.get_location(location.id).details) == {'name': 'Serialized'}
+    assert repo.remove_location(location)
+    assert repo.get_location(location.id) is None

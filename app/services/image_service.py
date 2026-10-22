@@ -2,6 +2,7 @@ import base64
 import binascii
 from io import BytesIO
 from uuid import uuid4
+from app.metrics.operation_metrics import monitored
 
 from app.repositories.interfaces.storage.image_storage_protocol import ImageStorageProtocol
 from app.domain_models.site_account.SiteAccount import SiteAccount
@@ -37,8 +38,12 @@ class ImageService:
         if image_data.startswith(("https://", "http://")):
             return image_data
         mime, binary = base64_to_binary_io(image_data)
-        key = self.storage.save_image(f"{prefix}/{uuid4()}", binary, mime)
+        key = self._upload(f"{prefix}/{uuid4()}", binary, mime)
         return f"{self.base_url}/{self.image_path}/{key}"
+
+    @monitored("image", "upload")
+    def _upload(self, key, binary, mime):
+        return self.storage.save_image(key, binary, mime)
 
     def save_event_image(self, image_data: str) -> str:
         return self._save_image(image_data, "events")

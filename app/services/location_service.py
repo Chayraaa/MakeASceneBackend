@@ -1,5 +1,6 @@
 from geoalchemy2.shape import from_shape
 import math
+from app.metrics.operation_metrics import monitored, location_sources
 
 from app.repositories.interfaces.external.search_engine_location_protocol import SearchEngineLocationProtocol
 from app.repositories.interfaces.external.location_protocol import LocationProtocol
@@ -17,14 +18,17 @@ class LocationService:
     # Fetches the location details:
     # Prio 1: Location DB Table
     # Prio 2: Location API
+    @monitored("location", "resolve")
     def get_location_data(self, place_id: str) -> Location | None:
         location = self.location_storage.get_location_by_place_id(place_id)
         if location is not None:
+            location_sources.labels("database").inc()
             return location
 
         resp = self.location_api_repo.get_location_details(place_id)
         feature = next((item for item in resp.get("features", []) if item.get("geometry")), None)
         if feature is not None:
+            location_sources.labels("details").inc()
             details = feature["properties"]
             geometry = feature["geometry"]
         else:
@@ -35,14 +39,18 @@ class LocationService:
                 if self.location_search_repo is not None else None
             )
             if not isinstance(cached, dict):
+                location_sources.labels("unresolved").inc()
                 return None
             try:
                 longitude, latitude = float(cached["lon"]), float(cached["lat"])
             except (KeyError, TypeError, ValueError):
+                location_sources.labels("unresolved").inc()
                 return None
             if not (math.isfinite(longitude) and math.isfinite(latitude)
                     and -180 <= longitude <= 180 and -90 <= latitude <= 90):
+                location_sources.labels("unresolved").inc()
                 return None
+            location_sources.labels("autocomplete").inc()
             details = {key: value for key, value in cached.items() if key != "id"}
             details["place_id"] = place_id
             geometry = {"type": "Point", "coordinates": [longitude, latitude]}
@@ -54,6 +62,7 @@ class LocationService:
         return location
 
 
+    @monitored("location", "autocomplete")
     def autocomplete_location(self, query: str, force_api: bool = False) -> list[dict]:
         if force_api:
             res = self.location_api_repo.autocomplete_location(query)

@@ -1,5 +1,9 @@
+import logging
 from queue import Queue
 import threading
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExpansionWorker:
@@ -18,5 +22,7 @@ class ExpansionWorker:
             item = self.queue.get()
             try:
                 self._process_fn(item)
-            except Exception as e:
-                print("worker error:", e)
+            except Exception:
+                logger.exception("Tag expansion worker failed")
+            finally:
+                self.queue.task_done()

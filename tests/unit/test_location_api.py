@@ -7,6 +7,11 @@ from app.metrics.operation_metrics import operations, duration
 from app.repositories.external.location_repo import LocationRepo
 
 
+@pytest.fixture(autouse=True)
+def geoapify_key(monkeypatch):
+    monkeypatch.setenv('GEOAPIFY_KEY', 'test-key')
+
+
 @pytest.mark.parametrize('method,operation,payload,expected', [
     ('get_location_details', 'details', {'features': []}, {'features': []}),
     ('autocomplete_location', 'autocomplete', {'results': [{'place_id': 'p'}]}, [{'place_id': 'p'}]),
@@ -30,13 +35,30 @@ def test_geoapify_success(monkeypatch, method, operation, payload, expected):
 @pytest.mark.parametrize('method,operation,empty', [
     ('get_location_details', 'details', {}), ('autocomplete_location', 'autocomplete', []),
 ])
-def test_geoapify_http_error_is_monitored_without_logging_secret(monkeypatch, capsys, method, operation, empty):
+def test_geoapify_http_error_is_monitored_without_logging_secret(monkeypatch, caplog, method, operation, empty):
     monkeypatch.setattr(requests, 'get', Mock(return_value=Mock(status_code=429)))
     metric = operations.labels('geoapify', operation, 'error')
     before = metric._value.get()
     assert getattr(LocationRepo(), method)('query') == empty
     assert metric._value.get() == before + 1
-    assert capsys.readouterr().out == ''
+    assert f'Geoapify {operation} failed: HTTP 429' in caplog.text
+    assert 'test-key' not in caplog.text
+
+
+@pytest.mark.parametrize('key', [None, '', '   '])
+def test_geoapify_missing_key_skips_request(monkeypatch, caplog, key):
+    if key is None:
+        monkeypatch.delenv('GEOAPIFY_KEY')
+    else:
+        monkeypatch.setenv('GEOAPIFY_KEY', key)
+    get = Mock()
+    monkeypatch.setattr(requests, 'get', get)
+    counter = operations.labels('geoapify', 'autocomplete', 'error')
+    before = counter._value.get()
+    assert LocationRepo().autocomplete_location('Berlin') == []
+    get.assert_not_called()
+    assert counter._value.get() == before + 1
+    assert 'GEOAPIFY_KEY is missing or blank' in caplog.text
 
 
 @pytest.mark.parametrize('failure', [requests.Timeout('timeout'), ValueError('bad JSON')])

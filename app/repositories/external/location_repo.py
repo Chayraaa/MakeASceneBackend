@@ -1,3 +1,4 @@
+import logging
 import os
 
 import requests
@@ -6,12 +7,19 @@ from app.metrics.operation_metrics import duration, operations
 from app.repositories.interfaces.external.location_protocol import LocationProtocol
 
 
+logger = logging.getLogger(__name__)
+
+
 class LocationRepo(LocationProtocol):
     def __init__(self):
         self.api_key = os.environ.get("GEOAPIFY_KEY")
 
     def _get(self, operation, path, params):
         with duration.labels("geoapify", operation).time():
+            if not self.api_key or not self.api_key.strip():
+                operations.labels("geoapify", operation, "error").inc()
+                logger.error("Geoapify %s failed: GEOAPIFY_KEY is missing or blank", operation)
+                return {}
             try:
                 response = requests.get(
                     f"https://api.geoapify.com/{path}",
@@ -19,10 +27,13 @@ class LocationRepo(LocationProtocol):
                 )
                 if response.status_code != 200:
                     operations.labels("geoapify", operation, "error").inc()
+                    # URLs, response bodies and exception messages may contain the API key.
+                    logger.error("Geoapify %s failed: HTTP %s", operation, response.status_code)
                     return {}
                 value = response.json()
-            except Exception:
+            except Exception as exc:
                 operations.labels("geoapify", operation, "error").inc()
+                logger.error("Geoapify %s failed: %s", operation, type(exc).__name__)
                 raise
             operations.labels("geoapify", operation, "success").inc()
             return value

@@ -54,7 +54,7 @@ spec:
                 name: makeascene-config
             # All keys from the Secret become env vars — includes
             # SQLALCHEMY_DATABASE_URI, GOOGLE_CLIENT_ID/SECRET, JWT_SECRET,
-            # RESEND_API_KEY, TYPESENSE_API_KEY (mirrors secrets.env)
+            # RESEND_API_KEY, TYPESENSE_API_KEY, GEOAPIFY_KEY (mirrors secrets.env)
             - secretRef:
                 name: makeascene-secrets
           env:

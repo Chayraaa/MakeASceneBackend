@@ -2307,8 +2307,6 @@ components:
         timezone:
           type: string
           description: The timezone in IANA format
-      required:
-        - timezone
     CreateUserRequest:
       type: object
       required:

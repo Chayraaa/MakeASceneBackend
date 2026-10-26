@@ -378,6 +378,92 @@ paths:
           description: ''
       security:
         - BearerAuth: []
+  /users/me/messages/{id}:
+    patch:
+      summary: Mark as read
+      deprecated: false
+      description: Set notifications as read
+      operationId: readMessage
+      tags:
+        - Users
+        - Message
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                read:
+                  type: boolean
+              required:
+                - read
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Delete message
+      deprecated: false
+      description: deletes a message
+      operationId: deleteMessage
+      tags:
+        - Message
+        - Users
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
   /users:
     post:
       summary: Create user
@@ -1862,17 +1948,26 @@ components:
           items:
             type: object
             properties:
-              sender:
-                type: string
-                examples:
-                  - test event
               message:
                 type: string
                 examples:
                   - test message
+              title:
+                type: string
+              sent_at:
+                type: string
+                format: date-time
+              read:
+                type: boolean
+              id:
+                type: integer
+                description: ID
             required:
-              - sender
               - message
+              - title
+              - sent_at
+              - read
+              - id
       required:
         - messages
     SessionRequestRefreshToken:

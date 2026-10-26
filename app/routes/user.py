@@ -66,6 +66,46 @@ def delete(user: User):
     return {"message": "Deletion failed"}, 500
 
 
+@users.route("/me/messages", methods=["GET"])
+@login_required()
+@validate
+def get_messages(user: User):
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+
+    messages = current_app.message_service.get_messages(user, page, page_size)
+    if messages is None:
+        return {"error": "Failed to retrieve messages."}, 500
+    return {"messages": [message.to_dict() for message in messages]}, 200
+
+
+@users.route("/me/messages/<int:id>", methods=["PATCH"])
+@login_required()
+@validate
+def update_message(user: User, id: int):
+    data = request.get_json()
+    result = current_app.message_service.mark_message_as_read(id, user, data["read"])
+    if result is None:
+        return {"error": "Message not found."}, 404
+    if not result:
+        return {"error": "Message could not be updated."}, 500
+    return {}, 200
+
+
+@users.route("/me/messages/<int:id>", methods=["DELETE"])
+@login_required()
+@validate
+def delete_message(user: User, id: int):
+    result = current_app.message_service.delete_message(id, user)
+    if result is None:
+        return {"error": "Message not found."}, 404
+    if not result:
+        return {"error": "Message could not be deleted."}, 500
+    return {}, 200
+
+
 @users.route("/me/tags", methods=["GET"])
 @validate
 @login_required()

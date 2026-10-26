@@ -10,6 +10,7 @@ _multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_mul
 os.makedirs(_multiproc_dir, exist_ok=True)
 os.environ["PROMETHEUS_MULTIPROC_DIR"] = _multiproc_dir
 from app.services.location_service import LocationService
+from app.services.message_service import MessageService
 from functools import wraps
 from time import sleep
 
@@ -148,6 +149,7 @@ def setup_services(app: Flask):
                                                   unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo)
     app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo, unit_of_work.location_storage)
     app.event_service = EventService(unit_of_work.event_repo, app.location_service, app.image_service)
+    app.message_service = MessageService(unit_of_work.message_repo, unit_of_work.email_repo, unit_of_work.user_repo)
 
 
 # Add all the routes here (see health as example)

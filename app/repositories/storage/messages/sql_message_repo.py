@@ -5,7 +5,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.database_models.messages.message_model import MessageModel
 from app.domain_models.messages.message import Message
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -43,9 +42,15 @@ class SqlMessageRepo:
             logger.exception("Failed to get message %s", message_id)
             return None
 
-    def get_messages_by_user_id(self, user_id: int) -> list[Message] | None:
+    def get_messages_by_user_id(self, user_id: int, page: int, page_size: int) -> list[Message] | None:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
         try:
-            models = self.session.query(MessageModel).filter_by(user_id=user_id).all()
+            models = (self.session.query(MessageModel)
+                      .filter_by(user_id=user_id)
+                      .order_by(MessageModel.sent_at.desc())
+                      .offset((page - 1) * page_size)
+                      .limit(page_size).all())
             return [self._to_domain(model) for model in models]
         except SQLAlchemyError:
             self.session.rollback()

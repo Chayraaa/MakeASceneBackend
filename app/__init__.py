@@ -10,6 +10,7 @@ _multiproc_dir = os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_mul
 os.makedirs(_multiproc_dir, exist_ok=True)
 os.environ["PROMETHEUS_MULTIPROC_DIR"] = _multiproc_dir
 from app.services.location_service import LocationService
+from app.services.message_service import MessageService
 from functools import wraps
 from time import sleep
 
@@ -54,6 +55,9 @@ from app.database_models.site_account.site_account_application_contact_model imp
 from app.database_models.site_account.site_account_application_sources_model import SiteAccountApplicationSourcesModel
 from app.database_models.location_model import LocationModel
 from app.database_models.events.event_model import EventModel
+from app.database_models.messages.message_model import MessageModel
+from app.database_models.subscriptions.event_subscription_model import EventSubscriptionModel
+from app.database_models.subscriptions.site_account_subscription_model import SiteAccountSubscriptionModel
 
 # Open API file path
 open_api_file_name = "makeascene.openapi.yaml"
@@ -143,10 +147,14 @@ def setup_services(app: Flask):
                                                   unit_of_work.refresh_token_repo)
     app.tag_service = TagService(unit_of_work.tag_repo, unit_of_work.saved_tag_repo,
                                  unit_of_work.blocked_tag_repo, unit_of_work.tag_search_engine)
+    app.message_service = MessageService(unit_of_work.message_repo, unit_of_work.email_repo, unit_of_work.user_repo)
     app.site_account_service = SiteAccountService(unit_of_work.site_account_repo,
-                                                  unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo)
+                                                  unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo,
+                                                  subscription_repo=unit_of_work.site_account_subscription_repo, message_service=app.message_service)
     app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo, unit_of_work.location_storage)
-    app.event_service = EventService(unit_of_work.event_repo, app.location_service, app.image_service)
+    app.event_service = EventService(unit_of_work.event_repo, app.location_service, app.image_service,
+                                     subscription_repo=unit_of_work.event_subscription_repo, message_service=app.message_service,
+                                     user_repo=unit_of_work.user_repo, site_account_service=app.site_account_service)
 
 
 # Add all the routes here (see health as example)
@@ -173,7 +181,7 @@ def setup_routes(app: Flask):
 ########################
 
 # Login required decorator
-def login_required(role: Role = Role.USER):
+def login_required(role: Role = Role.USER, *, optional: bool = False):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
@@ -181,6 +189,8 @@ def login_required(role: Role = Role.USER):
             # Get the token from the Authorization header
             token = request.headers.get("Authorization")
             if not token:
+                if optional:
+                    return f(user=None, *args, **kwargs)
                 return jsonify({"error": "Token missing"}), 401
 
             # Check if the token is in the correct format

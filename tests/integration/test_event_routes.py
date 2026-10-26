@@ -146,7 +146,7 @@ def test_event_query_maps_spec_parameters(api):
     assert query.place_id == "berlin" and query.longitude == 13.4 and query.latitude == 52.5
     assert query.radius_m == 1000 and query.include_partial
     assert query.from_.tzinfo is not None
-    assert api.service.query_events.call_args.kwargs == {"page": 2, "page_size": 5}
+    assert api.service.query_events.call_args.kwargs == {"page": 2, "page_size": 5, "user": api.actors["owner"]}
     for value in response.json:
         single_response = SimpleNamespace(get_json=lambda: value)
         assert_schema(api, single_response, "EventObject")
@@ -191,7 +191,7 @@ def test_site_account_details_images_and_empty_updates(api):
         "description": "About the organizer", "visible": False,
     })
     assert response.status_code == 200, response.get_json()
-    response = api.client.get(path)
+    response = api.client.get(path, headers=authorization(api))
     assert_schema(api, response, "SiteAccount")
     assert response.json["picture"].startswith("http://127.0.0.1:5000/v1/image/site_account/")
     assert response.json["banner"].startswith("http://127.0.0.1:5000/v1/image/site_account/")
@@ -234,7 +234,7 @@ def test_site_account_creation_is_moderator_only(api):
     assert response.status_code == 200, response.get_json()
     created = api.sites.get_site_account_by_name("New site")
     assert created.creator_id == api.actors["owner"].id
-    assert_schema(api, api.client.get(f"/v1/site_accounts/{created.id}"), "SiteAccount")
+    assert_schema(api, api.client.get(f"/v1/site_accounts/{created.id}", headers=authorization(api)), "SiteAccount")
 
 
 @pytest.mark.parametrize("method", ["post", "patch"])
@@ -295,3 +295,54 @@ def test_create_art_event_with_only_new_tag_names(api):
     assert saved_event.tags == [tag.id for tag in created_tags]
     assert saved_event.from_.utcoffset() == timedelta(hours=1)
     assert api.app.tag_service.search_engine_repo.add_tag.call_count == 4
+
+
+@pytest.mark.parametrize("actor,allowed", [(None, False), ("stranger", False), ("collaborator", False),
+                                         ("owner", True), ("moderator", True), ("admin", True)])
+@pytest.mark.parametrize("kind", ["event", "site_accounts"])
+def test_hidden_detail_permissions(api, actor, allowed, kind):
+    headers = authorization(api, actor) if actor else {}
+    if kind == "event":
+        api.event.visible = False
+        real = EventService(Mock(), Mock(), Mock(), site_account_service=api.app.site_account_service)
+        api.service.can_view.side_effect = real.can_view
+        target_id = api.event.id
+    else:
+        target_id = api.owner.id  # New site accounts are hidden by default.
+    response = api.client.get(f"/v1/{kind}/{target_id}", headers=headers)
+    assert response.status_code == (200 if allowed else 404)
+
+
+@pytest.mark.parametrize("actor,allowed", [(None, False), ("stranger", False), ("owner", True),
+                                         ("moderator", True), ("admin", True)])
+def test_site_search_visibility(api, actor, allowed):
+    api.app.site_account_service.search_engine.search_by_semantic.return_value = [SimpleNamespace(id=api.owner.id)]
+    headers = authorization(api, actor) if actor else {}
+    response = api.client.get("/v1/site_accounts?q=Owner", headers=headers)
+    assert response.status_code == 200
+    assert [account["id"] for account in response.json] == ([api.owner.id] if allowed else [])
+
+
+@pytest.mark.parametrize("zone", ["Europe/Berlin", "America/New_York", "UTC"])
+def test_timezone_update_persisted_and_returned(api, zone):
+    response = api.client.patch("/v1/users/me", headers=authorization(api), json={"timezone": zone})
+    assert response.status_code == 200, response.json
+    assert response.json["timezone"] == zone
+    assert api.users.get_user(api.actors["owner"].id).timezone == zone
+    response = api.client.get("/v1/users/me", headers=authorization(api))
+    assert response.json["timezone"] == zone
+
+
+@pytest.mark.parametrize("zone", ["Invalid/Zone", "", "../Europe/Berlin", None, 123])
+def test_invalid_timezone_does_not_change_user(api, zone):
+    before = api.users.get_user(api.actors["owner"].id)
+    response = api.client.patch("/v1/users/me", headers=authorization(api),
+                                json={"timezone": zone, "mature": not before.mature})
+    assert response.status_code == 422
+    after = api.users.get_user(before.id)
+    assert (after.timezone, after.mature) == (before.timezone, before.mature)
+
+
+@pytest.mark.parametrize("path", ["/v1/event/123", "/v1/site_accounts/1", "/v1/site_accounts?q=Owner"])
+def test_optional_authentication_rejects_bad_tokens(api, path):
+    assert api.client.get(path, headers={"Authorization": "Bearer invalid"}).status_code == 401

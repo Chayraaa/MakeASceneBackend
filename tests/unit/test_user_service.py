@@ -48,7 +48,7 @@ def test_create_user_sends_confirmation_email():
     email_repo.send_email.assert_called_once()
     _, kwargs = email_repo.send_email.call_args
     assert kwargs["recipient"] == "test@test.com"
-    assert "confirm" in kwargs["subject"].lower() or "welcome" in kwargs["subject"].lower()
+    assert kwargs["subject"] == "Willkommen bei Make A Scene! Bestätige deine E-Mail-Adresse, um loszulegen."
 
 
 
@@ -200,7 +200,7 @@ def test_resend_confirmation_email_sends_email_with_correct_recipient_and_subjec
     email_repo.send_email.assert_called_once()
     _, kwargs = email_repo.send_email.call_args
     assert kwargs["recipient"] == "test@test.com"
-    assert "confirm" in kwargs["subject"].lower() or "welcome" in kwargs["subject"].lower()
+    assert kwargs["subject"] == "Willkommen bei Make A Scene! Bestätige deine E-Mail-Adresse, um loszulegen."
 
 
 def test_resend_confirmation_email_body_contains_plain_token():

@@ -38,3 +38,14 @@ def test_user_persistence(session):
     assert user is not None
     assert user.email == "a@b.com"
     assert user.id is not None
+
+def test_user_timezone_round_trip(session):
+    from app.repositories.storage.sql_user_repo import SqlUserRepo
+    repo = SqlUserRepo(session)
+    assert repo.create_user(email="timezone@example.com", password="pw")
+    user = repo.get_user_by_email("timezone@example.com")
+    assert user.timezone == "UTC"
+    user.timezone = "Europe/Berlin"
+    assert repo.update_user(user)
+    assert repo.get_user(user.id).timezone == "Europe/Berlin"
+    assert repo.get_user_by_email(user.email).timezone == "Europe/Berlin"

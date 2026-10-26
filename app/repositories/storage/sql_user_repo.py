@@ -23,6 +23,7 @@ class SqlUserRepo:
             created_at=db_user.created_at,
             mature=db_user.mature,
             email_preference=db_user.email_preference,
+            timezone=db_user.timezone,
             role=db_user.role
         )
 
@@ -39,6 +40,7 @@ class SqlUserRepo:
             created_at=db_user.created_at,
             mature=db_user.mature,
             email_preference=db_user.email_preference,
+            timezone=db_user.timezone,
             role=db_user.role
         )
 
@@ -60,6 +62,7 @@ class SqlUserRepo:
         db_user.mature = user.mature
         db_user.email_preference = user.email_preference
         db_user.role = user.role
+        db_user.timezone = user.timezone
         self.session.commit()
         return True
 

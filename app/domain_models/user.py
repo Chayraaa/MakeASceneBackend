@@ -18,4 +18,5 @@ class User:
     mature: bool = True
     email_preference: bool = True
     role: int = Role.USER
+    timezone: str = "UTC"
 

@@ -1,3 +1,9 @@
+import logging
+from app.domain_models.messages.notify_message import NotifyMessage
+from app.services.message_service import MessageService
+from app.domain_models.events.event import Event
+from app.domain_models.subscriptions.site_account_subscription import SiteAccountSubscription
+from app.repositories.interfaces.storage.subscriptions.site_account_subscription_repo_protocol import SiteAccountSubscriptionRepoProtocol
 from typing import Any
 
 from flask import json
@@ -14,6 +20,13 @@ from app.services.image_service import ImageService
 from app.metrics import site_account_metrics
 
 
+# Editable notification templates. Available placeholders: site_name, event_name.
+NEW_EVENT_TITLE = "Neues Event von {site_name}"
+NEW_EVENT_BODY = '{site_name} hat ein neues Event veröffentlicht: „{event_name}“.'
+
+logger = logging.getLogger(__name__)
+
+
 def _looks_like_base64_image(s: str) -> bool:
     return s.startswith("data:image") and "base64," in s
 
@@ -21,7 +34,11 @@ def _looks_like_base64_image(s: str) -> bool:
 class SiteAccountService:
     def __init__(self, site_account_repo: SiteAccountRepoProtocol, user_repo: UserRepoProtocol,
                  image_service: ImageService, search_engine: SearchEngineSiteAccountProtocol,
-                 application_repo: SiteAccountApplicationRepoProtocol):
+                 application_repo: SiteAccountApplicationRepoProtocol,
+                 subscription_repo: SiteAccountSubscriptionRepoProtocol | None = None,
+                 message_service: MessageService | None = None):
+        self.message_service = message_service
+        self.subscription_repo = subscription_repo
         self.site_account_repo = site_account_repo
         self.user_repo = user_repo
         self.image_service = image_service
@@ -131,16 +148,94 @@ class SiteAccountService:
         application.contacts = contact if contact is not None else application.contacts
         return self.application_repo.update_application(application)
 
-    def query_site_accounts(self, query: str, page: int = 1):
+    def can_view(self, user: User | None, site_account: SiteAccount) -> bool:
+        return site_account.visible or (user is not None and self.has_authority(user, site_account))
+
+    def query_site_accounts(self, query: str, page: int = 1, user: User | None = None):
+        if page < 1:
+            raise ValueError("page must be positive")
+        # Search pages contain public and hidden accounts. Apply permissions
+        # before slicing so the caller receives pages of accessible results.
         with site_account_metrics.site_account_search_duration.time():
-            results = self.search_engine.search_by_semantic(query, page)
             found = []
-            for result in results:
-                account = self.get_site_account_by_id(result.id)
-                if account is not None and account.visible:
-                    found.append(account)
-        return found
+            search_page = 1
+            while len(found) < page * 25:
+                results = self.search_engine.search_by_semantic(query, search_page)
+                for result in results:
+                    account = self.get_site_account_by_id(result.id)
+                    if account is not None and self.can_view(user, account):
+                        found.append(account)
+                if len(results) < 25:
+                    break
+                search_page += 1
+        return found[(page - 1) * 25:page * 25]
 
     def has_authority(self, user: User, site_account: SiteAccount):
         rank = user.role.value if isinstance(user.role, Role) else user.role
         return user.id == site_account.creator_id or rank >= Role.MODERATOR.value
+
+    def get_site_account_subscription(self, user: User, site_account_id: int) -> SiteAccountSubscription | None:
+        """Look up only the authenticated user's subscription to this target."""
+        subscription = self.subscription_repo.get_by_user_and_site_account_id(user.id, site_account_id)
+        if subscription is None or subscription.user_id != user.id:
+            return None
+        return subscription
+
+    def get_site_account_subscriptions(self, user: User, page: int = 1, page_size: int = 25) -> list[SiteAccountSubscription] | None:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        return self.subscription_repo.get_by_user_id(user.id, page, page_size)
+
+    def subscribe_to_site_account(self, user: User, site_account_id: int) -> bool | None:
+        """Return None for a missing target, otherwise the write result."""
+        if self.site_account_repo.get_site_account_by_id(site_account_id) is None:
+            return None
+        if self.get_site_account_subscription(user, site_account_id) is not None:
+            return True
+        return self.subscription_repo.create(SiteAccountSubscription(user_id=user.id, site_account_id=site_account_id))
+
+    def unsubscribe_from_site_account(self, user: User, site_account_id: int) -> bool | None:
+        subscription = self.get_site_account_subscription(user, site_account_id)
+        if subscription is None or subscription.user_id != user.id:
+            return None
+        return self.subscription_repo.delete(subscription)
+
+    def set_site_account_notifications(self, user: User, site_account_id: int, notify: bool) -> bool | None:
+        if not isinstance(notify, bool):
+            raise ValueError("notify must be a boolean")
+        subscription = self.get_site_account_subscription(user, site_account_id)
+        if subscription is None or subscription.user_id != user.id:
+            return None
+        subscription.notifications_enabled = notify
+        return self.subscription_repo.update(subscription)
+
+    def notify_new_event(self, event: Event):
+        """Notify opted-in followers after an event is published successfully."""
+        if self.message_service is None or self.subscription_repo is None:
+            return
+        try:
+            account = self.get_site_account_by_id(event.owner_id)
+            if account is None:
+                return
+            values = {"site_name": account.name, "event_name": event.name}
+            notification = NotifyMessage(NEW_EVENT_TITLE.format(**values), NEW_EVENT_BODY.format(**values))
+            page = 1
+            while True:
+                subscriptions = self.subscription_repo.get_by_site_account_id(event.owner_id, page, 100)
+                if subscriptions is None:
+                    logger.error("Could not load site account notification recipients")
+                    return
+                for subscription in subscriptions:
+                    if not subscription.notifications_enabled:
+                        continue
+                    try:
+                        user = self.user_repo.get_user(subscription.user_id)
+                        if user is not None and not self.message_service.send_message(notification, user):
+                            logger.error("Failed to notify user %s", subscription.user_id)
+                    except Exception:
+                        logger.exception("Failed to notify user %s", subscription.user_id)
+                if len(subscriptions) < 100:
+                    return
+                page += 1
+        except Exception:
+            logger.exception("Failed to send new-event notifications for event %s", event.id)

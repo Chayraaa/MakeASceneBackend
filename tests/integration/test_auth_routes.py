@@ -20,7 +20,7 @@ def client(route_app, monkeypatch):
     for name in ('auth_service', 'user_service', 'google_oauth_service', 'tag_service', 'google'):
         monkeypatch.setattr(route_app, name, Mock())
     monkeypatch.setattr(PasswordService, 'verify_token', Mock(return_value=1))
-    route_app.user_service.get_user.return_value = SimpleNamespace(id=1, email='a@example.com', mature=True, email_preference=True, role=0)
+    route_app.user_service.get_user.return_value = SimpleNamespace(id=1, email='a@example.com', mature=True, email_preference=True, role=0, timezone='UTC')
     return route_app.test_client()
 
 
@@ -102,4 +102,5 @@ def test_user_settings_preserve_false_values(client):
     response = client.patch('/v1/users/me', headers={'Authorization': 'Bearer test'}, json={'mature': False, 'email_preference': False})
     assert response.status_code == 200, response.json
     assert response.json['mature'] is False and response.json['email_preference'] is False
+    assert response.json['timezone'] == 'UTC'
     client.application.user_service.update_user.assert_called_once()

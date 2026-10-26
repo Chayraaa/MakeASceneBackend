@@ -32,6 +32,9 @@ class UserModel(db.Model):
     password_reset_tokens = relationship(
         "PasswordResetTokenModel", back_populates="user", cascade="all, delete-orphan"
     )
+    messages = relationship(
+        "MessageModel", back_populates="user", cascade="all, delete-orphan"
+    )
     # Tags
     saved_tags = relationship(
         "SavedTagModel", back_populates="user", cascade="all, delete-orphan"

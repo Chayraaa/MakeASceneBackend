@@ -54,6 +54,7 @@ from app.database_models.site_account.site_account_application_contact_model imp
 from app.database_models.site_account.site_account_application_sources_model import SiteAccountApplicationSourcesModel
 from app.database_models.location_model import LocationModel
 from app.database_models.events.event_model import EventModel
+from app.database_models.messages.message_model import MessageModel
 
 # Open API file path
 open_api_file_name = "makeascene.openapi.yaml"

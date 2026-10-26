@@ -1,8 +1,17 @@
 param (
-    [string]$Message = "migration"
+    [string]$Message = "migration",
+    [switch]$UpgradeOnly
 )
 
 $env:FLASK_ENV = "migration"
+
+if ($UpgradeOnly) {
+    flask db upgrade
+    if ($LASTEXITCODE -ne 0) {
+        throw "Database upgrade failed."
+    }
+    return
+}
 
 # Apply existing revisions before generating a revision for further model changes.
 flask db upgrade

@@ -37,13 +37,14 @@ from app.repositories.storage.sql_user_repo import SqlUserRepo
 from app.repositories.storage.tags.sql_blocked_tag_repo import SqlBlockedTagRepo
 from app.repositories.storage.tags.sql_saved_tag_repo import SqlSavedTagRepo
 from app.repositories.storage.tags.sql_tag_repo import SqlTagRepo
-
-
+from app.repositories.storage.messages.sql_message_repo import SqlMessageRepo
+from app.repositories.interfaces.storage.messages.message_storage_protocol import MessageStorageProtocol
 # This is a unit of work. It groups repositories that depend on another.
 # If you have multiple units of work that have the same use case but with different repositories as implementation,
 # they need to have the same variable names.
 class DeployUnitOfWork:
     def __init__(self):
+        self.message_repo: MessageStorageProtocol = SqlMessageRepo(db.session)
         self.event_repo: EventRepoProtocol = SqlEventRepo(db.session)
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)
         self.image_storage: ImageStorageProtocol = S3ImageStorage(os.environ.get("S3_BUCKET_NAME", "images"))

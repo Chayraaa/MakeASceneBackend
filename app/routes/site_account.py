@@ -8,13 +8,14 @@ site_account = Blueprint('site_account', __name__)
 
 
 @site_account.route("", methods=["GET"])
+@login_required(optional=True)
 @validate
-def query_site_accounts():
+def query_site_accounts(user: User | None):
     q = request.args.get("q")
     page = request.args.get("page", 1, type=int)
     if page < 1:
         return {"error": "validation", "message": "page must be positive."}, 422
-    sites = current_app.site_account_service.query_site_accounts(q, page)
+    sites = current_app.site_account_service.query_site_accounts(q, page, user=user)
     return [site.to_dict() for site in sites], 200, []
 
 
@@ -38,10 +39,11 @@ def create_site_account(user: User):
 
 
 @site_account.route("/<int:id>", methods=["GET"])
+@login_required(optional=True)
 @validate
-def get_site_account(id: int):
+def get_site_account(id: int, user: User | None):
     account = current_app.site_account_service.get_site_account_by_id(id)
-    if account:
+    if account and current_app.site_account_service.can_view(user, account):
         return account.to_dict()
     return {"message": "Site account not found."}, 404
 

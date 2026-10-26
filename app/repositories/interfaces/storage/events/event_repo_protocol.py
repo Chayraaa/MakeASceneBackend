@@ -1,3 +1,4 @@
+from app.domain_models.user import User, Role
 from typing import Protocol
 
 from app.domain_models.events.event import Event
@@ -15,7 +16,7 @@ class EventRepoProtocol(Protocol):
 
     def get_events(self, page: int, page_size: int) -> list[Event]: ...
 
-    def query_events(self, query: EventQuery, page: int, page_size: int) -> list[Event]: ...
+    def query_events(self, query: EventQuery, page: int, page_size: int, user: User | None = None) -> list[Event]: ...
 
     def update_event(self, event: Event) -> bool: ...
 

@@ -19,6 +19,9 @@ class SiteAccountModel(db.Model):
     visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     creator = relationship("UserModel", back_populates="site_accounts")
+    subscriptions = relationship(
+        "SiteAccountSubscriptionModel", back_populates="site_account", cascade="all, delete-orphan"
+    )
     owned_events = relationship("EventModel", back_populates="owner")
     collaborating_events = relationship(
         "EventModel", secondary="event_collaborators", back_populates="collaborators"

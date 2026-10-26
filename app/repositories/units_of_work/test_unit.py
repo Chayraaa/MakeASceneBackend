@@ -1,3 +1,7 @@
+from app.repositories.interfaces.storage.subscriptions.site_account_subscription_repo_protocol import SiteAccountSubscriptionRepoProtocol
+from app.repositories.storage.subscriptions.sql_site_account_subscription_repo import SqlSiteAccountSubscriptionRepo
+from app.repositories.interfaces.storage.subscriptions.event_subscription_repo_protocol import EventSubscriptionRepoProtocol
+from app.repositories.storage.subscriptions.sql_event_subscription_repo import SqlEventSubscriptionRepo
 from app.extensions import db
 from app.repositories.interfaces.storage.events.event_repo_protocol import EventRepoProtocol
 from app.repositories.interfaces.storage.messages.message_storage_protocol import MessageStorageProtocol
@@ -41,6 +45,8 @@ from app.repositories.storage.tags.sql_tag_repo import SqlTagRepo
 class TestUnitOfWork:
     __test__ = False
     def __init__(self):
+        self.site_account_subscription_repo: SiteAccountSubscriptionRepoProtocol = SqlSiteAccountSubscriptionRepo(db.session)
+        self.event_subscription_repo: EventSubscriptionRepoProtocol = SqlEventSubscriptionRepo(db.session)
         self.message_repo: MessageStorageProtocol = SqlMessageRepo(db.session)
         self.event_repo: EventRepoProtocol = SqlEventRepo(db.session)
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)

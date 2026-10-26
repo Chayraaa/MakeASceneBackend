@@ -7,16 +7,16 @@ info:
 tags:
   - name: Users
   - name: Tags
+  - name: Site Account
   - name: Message
+  - name: Event
   - name: Authentication
   - name: OAuth
   - name: Health
   - name: Search
-  - name: Site Account
   - name: Application
   - name: Image
   - name: Location
-  - name: Event
 paths:
   /users/me/tags/{id}:
     delete:
@@ -244,6 +244,396 @@ paths:
                 type: object
                 properties: {}
           headers: {}
+      security:
+        - BearerAuth: []
+  /users/me/site_accounts/{id}:
+    patch:
+      summary: Notification site account
+      deprecated: false
+      description: Change the notification state
+      operationId: notifySiteAccount
+      tags:
+        - Users
+        - Site Account
+        - Message
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notify:
+                  type: boolean
+              required:
+                - notify
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    get:
+      summary: Get info about a site account
+      deprecated: false
+      description: Gets info about one site account
+      operationId: infoSiteAccount
+      tags:
+        - Users
+        - Site Account
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccountSubscriptionInfo'
+          headers: {}
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Unsubscribe site account
+      deprecated: false
+      description: unsubscribe from a site account
+      operationId: UnsubscribeSiteAccount
+      tags:
+        - Users
+        - Site Account
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    post:
+      summary: Subscribe site account
+      deprecated: false
+      description: Subscribe to a site account
+      operationId: saveSiteAccount
+      tags:
+        - Users
+        - Site Account
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/site_accounts:
+    get:
+      summary: Get all subscribed site accounts
+      deprecated: false
+      description: Get the site accounts you saved.
+      operationId: getSavedSiteAccounts
+      tags:
+        - Users
+        - Site Account
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteAccountSubscriptionInfo'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/events/{id}:
+    patch:
+      summary: Notification event
+      deprecated: false
+      description: Change the notification state
+      operationId: notifyEvent
+      tags:
+        - Users
+        - Message
+        - Event
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notify:
+                  type: boolean
+              required:
+                - notify
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    get:
+      summary: Get info about an event
+      deprecated: false
+      description: Gets info about one event
+      operationId: infoEvent
+      tags:
+        - Users
+        - Event
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteAccountSubscriptionInfo'
+          headers: {}
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Unsubscribe event
+      deprecated: false
+      description: unsubscribe from an event
+      operationId: unsubscribeEvent
+      tags:
+        - Users
+        - Event
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    post:
+      summary: Subscribe event
+      deprecated: false
+      description: Subscribe to an event
+      operationId: saveEvent
+      tags:
+        - Users
+        - Event
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/events:
+    get:
+      summary: Get all subscribed events
+      deprecated: false
+      description: Get the site accounts you saved.
+      operationId: getSavedEvents
+      tags:
+        - Users
+        - Event
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteAccountSubscriptionInfo'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
       security:
         - BearerAuth: []
   /users/me:
@@ -1914,6 +2304,11 @@ components:
         email_preference:
           type: boolean
           default: true
+        timezone:
+          type: string
+          description: The timezone in IANA format
+      required:
+        - timezone
     CreateUserRequest:
       type: object
       required:
@@ -2294,6 +2689,16 @@ components:
           type: array
           items:
             type: string
+    SiteAccountSubscriptionInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        notify:
+          type: boolean
+      required:
+        - id
+        - notify
     LocationQueryAnswer:
       type: array
       items:
@@ -2413,6 +2818,8 @@ components:
               - collaborator-id
               - collaborator-name
               - collaborator-picture
+        visible:
+          type: boolean
       required:
         - id
         - name
@@ -2429,6 +2836,7 @@ components:
         - detail-data
         - data
         - collaborators
+        - visible
     EventObjectCreate:
       type: object
       properties:
@@ -2482,6 +2890,8 @@ components:
           type: array
           items:
             type: integer
+        visible:
+          type: boolean
       required:
         - name
         - from
@@ -2543,6 +2953,8 @@ components:
           type: array
           items:
             type: integer
+        visible:
+          type: boolean
   responses:
     Unauthorized:
       description: Authentication failed

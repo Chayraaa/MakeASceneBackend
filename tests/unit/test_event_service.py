@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import datetime, timezone
 from unittest.mock import Mock
 
@@ -107,6 +108,7 @@ def test_update_preserves_input_until_repository_succeeds(event_value, success):
     repo = Mock()
     repo.update_event.return_value = success
     event_value.id = 1
+    repo.get_event_by_id.return_value = deepcopy(event_value)
     service = EventService(repo, Mock(), ImageService(InMemoryImageStorage('images')))
     assert service.update_event(event_value) is success
     assert event_value.data[0]['image'].startswith('http' if success else 'data:image/')
@@ -142,4 +144,7 @@ def test_default_query_read_and_delete(event_value):
     assert service.query_events() == []
     assert repo.query_events.call_args.args == (EventQuery(), 1, 25)
     assert service.get_event_by_id(123) is repo.get_event_by_id.return_value
-    assert service.remove_event(event_value) is repo.remove_event.return_value
+    event_value.id = 123
+    repo.get_event_by_id.return_value = event_value
+    repo.remove_event.return_value = True
+    assert service.remove_event(event_value) is True

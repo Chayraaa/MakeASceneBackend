@@ -1,3 +1,7 @@
+from app.repositories.interfaces.storage.subscriptions.site_account_subscription_repo_protocol import SiteAccountSubscriptionRepoProtocol
+from app.repositories.storage.subscriptions.sql_site_account_subscription_repo import SqlSiteAccountSubscriptionRepo
+from app.repositories.interfaces.storage.subscriptions.event_subscription_repo_protocol import EventSubscriptionRepoProtocol
+from app.repositories.storage.subscriptions.sql_event_subscription_repo import SqlEventSubscriptionRepo
 import os
 
 from app.extensions import db, typesense_client, typesense_init_client
@@ -44,6 +48,8 @@ from app.repositories.interfaces.storage.messages.message_storage_protocol impor
 # they need to have the same variable names.
 class DeployUnitOfWork:
     def __init__(self):
+        self.site_account_subscription_repo: SiteAccountSubscriptionRepoProtocol = SqlSiteAccountSubscriptionRepo(db.session)
+        self.event_subscription_repo: EventSubscriptionRepoProtocol = SqlEventSubscriptionRepo(db.session)
         self.message_repo: MessageStorageProtocol = SqlMessageRepo(db.session)
         self.event_repo: EventRepoProtocol = SqlEventRepo(db.session)
         self.user_repo: UserRepoProtocol = SqlUserRepo(db.session)

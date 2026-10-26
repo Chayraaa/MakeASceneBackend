@@ -18,6 +18,7 @@ class UserModel(db.Model):
     oauth_method: Mapped[str] = mapped_column(nullable=False, default="local")
     confirmed: Mapped[bool] = mapped_column(nullable=False, default=False)
     mature: Mapped[bool] = mapped_column(nullable=False, default=True)
+    timezone: Mapped[str] = mapped_column(nullable=False, default="UTC", server_default="UTC")
     email_preference: Mapped[bool] = mapped_column(nullable=False, default=True)
     role: Mapped[int] = mapped_column(nullable=False, default=0)
     created_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
@@ -35,6 +36,14 @@ class UserModel(db.Model):
     messages = relationship(
         "MessageModel", back_populates="user", cascade="all, delete-orphan"
     )
+    # Subscriptions
+    event_subscriptions = relationship(
+        "EventSubscriptionModel", back_populates="user", cascade="all, delete-orphan"
+    )
+    site_account_subscriptions = relationship(
+        "SiteAccountSubscriptionModel", back_populates="user", cascade="all, delete-orphan"
+    )
+
     # Tags
     saved_tags = relationship(
         "SavedTagModel", back_populates="user", cascade="all, delete-orphan"

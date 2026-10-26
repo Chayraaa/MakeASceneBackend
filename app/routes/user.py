@@ -1,3 +1,4 @@
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from authlib.integrations.base_client import MismatchingStateError
 from flask import Blueprint, request, current_app, url_for
 
@@ -32,6 +33,7 @@ def info(user: User):
         "email": user.email,
         "mature": user.mature,
         "email_preference": user.email_preference,
+        "timezone": user.timezone,
     }, 200
 
 
@@ -40,6 +42,13 @@ def info(user: User):
 @login_required()
 def update(user: User):
     data = request.get_json()
+
+    if "timezone" in data:
+        try:
+            ZoneInfo(data["timezone"])
+        except (ZoneInfoNotFoundError, ValueError, TypeError):
+            return {"error": "Invalid timezone. Use an IANA name such as Europe/Berlin."}, 422
+        user.timezone = data["timezone"]
 
     mature = data.get("mature")
     email_preference = data.get("email_preference")
@@ -54,6 +63,7 @@ def update(user: User):
         "email": user.email,
         "mature": user.mature,
         "email_preference": user.email_preference,
+        "timezone": user.timezone,
     }, 200
 
 
@@ -64,6 +74,46 @@ def delete(user: User):
     if current_app.user_service.delete_user(user):
         return {"message": "Deletion was successful"}, 200
     return {"message": "Deletion failed"}, 500
+
+
+@users.route("/me/messages", methods=["GET"])
+@login_required()
+@validate
+def get_messages(user: User):
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+
+    messages = current_app.message_service.get_messages(user, page, page_size)
+    if messages is None:
+        return {"error": "Failed to retrieve messages."}, 500
+    return {"messages": [message.to_dict() for message in messages]}, 200
+
+
+@users.route("/me/messages/<int:id>", methods=["PATCH"])
+@login_required()
+@validate
+def update_message(user: User, id: int):
+    data = request.get_json()
+    result = current_app.message_service.mark_message_as_read(id, user, data["read"])
+    if result is None:
+        return {"error": "Message not found."}, 404
+    if not result:
+        return {"error": "Message could not be updated."}, 500
+    return {}, 200
+
+
+@users.route("/me/messages/<int:id>", methods=["DELETE"])
+@login_required()
+@validate
+def delete_message(user: User, id: int):
+    result = current_app.message_service.delete_message(id, user)
+    if result is None:
+        return {"error": "Message not found."}, 404
+    if not result:
+        return {"error": "Message could not be deleted."}, 500
+    return {}, 200
 
 
 @users.route("/me/tags", methods=["GET"])
@@ -128,3 +178,111 @@ def unblock_tag(user: User, id: int):
     if current_app.tag_service.unblock_tag(user, Tag(id=id, name="")):
         return {"message": "Tag unblocked."}, 200
     return {"message": "Tag was not found."}, 404
+
+
+def _subscription_write_response(result, message):
+    if result is None:
+        return {"error": "Subscription or target not found."}, 404
+    if not result:
+        return {"error": "Subscription could not be saved."}, 500
+    return {"message": message}, 200
+
+
+@users.route("/me/events", methods=["GET"])
+@login_required()
+@validate
+def get_event_subscriptions(user: User):
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+    subscriptions = current_app.event_service.get_event_subscriptions(user, page, page_size)
+    if subscriptions is None:
+        return {"error": "Failed to retrieve subscriptions."}, 500
+    return [{"id": subscription.event_id, "notify": subscription.notifications_enabled}
+            for subscription in subscriptions], 200
+
+
+@users.route("/me/events/<int:id>", methods=["GET"])
+@login_required()
+@validate
+def get_event_subscription(user: User, id: int):
+    subscription = current_app.event_service.get_event_subscription(user, id)
+    if subscription is None:
+        return {"error": "Subscription not found."}, 404
+    return {"id": subscription.event_id, "notify": subscription.notifications_enabled}, 200
+
+
+@users.route("/me/events/<int:id>", methods=["POST"])
+@login_required()
+@validate
+def subscribe_to_event(user: User, id: int):
+    result = current_app.event_service.subscribe_to_event(user, id)
+    return _subscription_write_response(result, "Subscribed successfully.")
+
+
+@users.route("/me/events/<int:id>", methods=["DELETE"])
+@login_required()
+@validate
+def unsubscribe_from_event(user: User, id: int):
+    result = current_app.event_service.unsubscribe_from_event(user, id)
+    return _subscription_write_response(result, "Unsubscribed successfully.")
+
+
+@users.route("/me/events/<int:id>", methods=["PATCH"])
+@login_required()
+@validate
+def set_event_notifications(user: User, id: int):
+    notify = request.get_json()["notify"]
+    result = current_app.event_service.set_event_notifications(user, id, notify)
+    return _subscription_write_response(result, "Notification preference updated.")
+
+
+@users.route("/me/site_accounts", methods=["GET"])
+@login_required()
+@validate
+def get_site_account_subscriptions(user: User):
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+    subscriptions = current_app.site_account_service.get_site_account_subscriptions(user, page, page_size)
+    if subscriptions is None:
+        return {"error": "Failed to retrieve subscriptions."}, 500
+    return [{"id": subscription.site_account_id, "notify": subscription.notifications_enabled}
+            for subscription in subscriptions], 200
+
+
+@users.route("/me/site_accounts/<int:id>", methods=["GET"])
+@login_required()
+@validate
+def get_site_account_subscription(user: User, id: int):
+    subscription = current_app.site_account_service.get_site_account_subscription(user, id)
+    if subscription is None:
+        return {"error": "Subscription not found."}, 404
+    return {"id": subscription.site_account_id, "notify": subscription.notifications_enabled}, 200
+
+
+@users.route("/me/site_accounts/<int:id>", methods=["POST"])
+@login_required()
+@validate
+def subscribe_to_site_account(user: User, id: int):
+    result = current_app.site_account_service.subscribe_to_site_account(user, id)
+    return _subscription_write_response(result, "Subscribed successfully.")
+
+
+@users.route("/me/site_accounts/<int:id>", methods=["DELETE"])
+@login_required()
+@validate
+def unsubscribe_from_site_account(user: User, id: int):
+    result = current_app.site_account_service.unsubscribe_from_site_account(user, id)
+    return _subscription_write_response(result, "Unsubscribed successfully.")
+
+
+@users.route("/me/site_accounts/<int:id>", methods=["PATCH"])
+@login_required()
+@validate
+def set_site_account_notifications(user: User, id: int):
+    notify = request.get_json()["notify"]
+    result = current_app.site_account_service.set_site_account_notifications(user, id, notify)
+    return _subscription_write_response(result, "Notification preference updated.")

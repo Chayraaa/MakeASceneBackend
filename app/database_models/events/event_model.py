@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Table
+from sqlalchemy import Boolean, true, Column, DateTime, ForeignKey, Integer, JSON, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
@@ -26,6 +26,7 @@ class EventModel(db.Model):
     __tablename__ = "events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
     from_: Mapped[datetime] = mapped_column("from", DateTime(timezone=True), nullable=False)
@@ -44,3 +45,6 @@ class EventModel(db.Model):
     )
     tags = relationship("TagModel", secondary=event_tags, back_populates="events")
     location = relationship("LocationModel")
+    subscriptions = relationship(
+        "EventSubscriptionModel", back_populates="event", cascade="all, delete-orphan"
+    )

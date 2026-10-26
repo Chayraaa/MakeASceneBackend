@@ -1,3 +1,4 @@
+from app.email_templates import render_email_template
 from datetime import datetime, timezone
 
 from app.domain_models.user import User
@@ -16,73 +17,9 @@ def _assemble_password_reset_mail(token: str):
     reset_url = "/v1/auth/password/reset?token="
     base_url = os.environ.get("BASE_URL", "http://127.0.0.1:5000")
 
-    reset_mail_text = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Reset your password</title>
-    </head>
-    <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 0;">
-        <tr>
-          <td align="center">
-            <table
-              width="600"
-              cellpadding="0"
-              cellspacing="0"
-              style="
-                background-color: #ffffff;
-                border-radius: 12px;
-                padding: 40px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-              "
-            >
-              <tr>
-                <td align="center">
-                  <h1 style="margin: 0; color: #222222; font-size: 28px;">
-                    Reset your password
-                  </h1>
-
-                  <p style="margin-top: 20px; color: #555555; font-size: 16px; line-height: 1.6;">
-                    We received a request to reset your password.
-                    Click the button below to choose a new one.
-                  </p>
-
-                  <a
-                    href="{base_url}{reset_url}{token}"
-                    style="
-                      display: inline-block;
-                      margin-top: 30px;
-                      padding: 14px 28px;
-                      background-color: #111827;
-                      color: #ffffff;
-                      text-decoration: none;
-                      border-radius: 8px;
-                      font-size: 16px;
-                      font-weight: bold;
-                    "
-                  >
-                    Reset Password
-                  </a>
-
-                  <p style="margin-top: 40px; color: #888888; font-size: 14px; line-height: 1.5;">
-                    If you didn't request a password reset, you can safely ignore this email.
-                  </p>
-                </td>
-              </tr>
-            </table>
-
-            <p style="margin-top: 20px; color: #999999; font-size: 12px;">
-              © 2026 Make A Scene
-            </p>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-    """
+    reset_mail_text = render_email_template(
+        "password_reset.html", url=f"{base_url}{reset_url}{token}"
+    )
 
     return reset_mail_text
 
@@ -191,7 +128,7 @@ class AuthService:
 
         self.password_reset_repo.create(hashed_token=hashed_token, user=user)
         with email_metrics.email_send_duration.labels(type='password_reset').time():
-            self.email_repo.send_email(subject="Reset your password", body=_assemble_password_reset_mail(token),
+            self.email_repo.send_email(subject="Passwort zurücksetzen", body=_assemble_password_reset_mail(token),
                                        recipient=email)
         email_metrics.email_sent.labels(type='password_reset').inc()
         auth_metrics.auth_password_reset_requested.inc()

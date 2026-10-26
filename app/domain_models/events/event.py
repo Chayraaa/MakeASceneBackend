@@ -19,10 +19,12 @@ class Event:
     repeating: str | None = None
     collaborators: list[int] = field(default_factory=list)
     id: int | None = None
+    visible: bool = True
 
     def to_dict(self):
         return {
             "id": self.id,
+            "visible": self.visible,
             "name": self.name,
             "description": self.description,
             "from": self.from_.isoformat(),

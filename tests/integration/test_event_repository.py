@@ -1,3 +1,4 @@
+from app.database_models.subscriptions.event_subscription_model import EventSubscriptionModel
 from datetime import datetime, timezone
 
 import pytest
@@ -30,7 +31,7 @@ def event_session():
         connection.exec_driver_sql("INSERT INTO locations (place_id, details) VALUES ('test-place', '{}')")
     db.metadata.create_all(engine, tables=[
         UserModel.__table__, SiteAccountModel.__table__, TagModel.__table__,
-        EventModel.__table__, event_tags, event_collaborators,
+        EventModel.__table__, event_tags, event_collaborators, EventSubscriptionModel.__table__,
     ])
     with Session(engine) as session:
         session.add_all([
@@ -223,3 +224,41 @@ def test_postgres_query_keeps_access_and_spatial_filters_with_fallback(event_ses
     assert "NOT (EXISTS" in sql
     assert "OFFSET" in sql and "LIMIT" in sql
     assert ["wheelchair", "adults"] in statements[0].params.values()
+
+
+def test_visibility_persisted_and_hidden_events_excluded(event_session, event_value):
+    from app.domain_models.events.event_query import EventQuery
+    repo = SqlEventRepo(event_session)
+    assert repo.create_event(event_value)
+    assert repo.get_event_by_id(event_value.id).visible is True
+    event_value.visible = False
+    assert repo.update_event(event_value)
+    assert repo.get_event_by_id(event_value.id).visible is False
+    assert repo.query_events(EventQuery(), 1, 25) == []
+    event_value.visible = True
+    assert repo.update_event(event_value)
+    assert len(repo.query_events(EventQuery(), 1, 25)) == 1
+
+
+@pytest.mark.parametrize("role,owner,allowed", [(0, False, False), (0, True, True), (1, False, True), (2, False, True)])
+def test_event_query_visibility_permissions_before_pagination(event_session, event_value, role, owner, allowed):
+    from types import SimpleNamespace
+    from dataclasses import replace
+    from app.domain_models.events.event_query import EventQuery
+    user = UserModel(email="viewer@example.com", password="pw", role=role)
+    event_session.add(user)
+    event_session.commit()
+    account = event_session.get(SiteAccountModel, 1)
+    if owner:
+        account.creator_id = user.id
+        event_session.commit()
+    repo = SqlEventRepo(event_session)
+    event_value.visible = False
+    assert repo.create_event(event_value)
+    public = replace(event_value, id=None, visible=True, name="Public")
+    assert repo.create_event(public)
+    viewer = SimpleNamespace(id=user.id, role=role)
+    first = repo.query_events(EventQuery(), 1, 1, user=viewer)
+    assert [item.name for item in first] == ([event_value.name] if allowed else ["Public"])
+    second = repo.query_events(EventQuery(), 2, 1, user=viewer)
+    assert [item.name for item in second] == (["Public"] if allowed else [])

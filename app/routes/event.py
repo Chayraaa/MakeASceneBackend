@@ -25,7 +25,7 @@ def _date(value: str) -> datetime:
 
 def _changes(data: dict) -> dict:
     fields = {}
-    for key in ("name", "description", "till", "layout", "data", "access", "repeating", "collaborators"):
+    for key in ("name", "description", "till", "layout", "data", "access", "repeating", "collaborators", "visible"):
         if key in data:
             fields[key] = data[key]
     for external, internal in (("from", "from_"), ("place-id", "place_id"),
@@ -118,14 +118,15 @@ def create_event(user: User):
 
 
 @events.route("/<id>", methods=["GET"])
+@login_required(optional=True)
 @validate
-def get_event(id: str):
+def get_event(id: str, user: User | None):
     try:
         event_id = int(id)
     except ValueError:
         return _error("Event not found.", 404)
     value = current_app.event_service.get_event_by_id(event_id)
-    if value is None:
+    if value is None or not current_app.event_service.can_view(user, value):
         return _error("Event not found.", 404)
     return _response(value), 200
 
@@ -197,7 +198,7 @@ def query_events(user: User):
             organizer_ids=[int(value) for value in args.getlist("organisers")],
         )
         values = current_app.event_service.query_events(
-            query, page=int(args.get("page", 1)), page_size=int(args.get("size", 25))
+            query, page=int(args.get("page", 1)), page_size=int(args.get("size", 25)), user=user
         )
     except ValueError as exc:
         return _error(str(exc), 422)

@@ -1,3 +1,4 @@
+from app.domain_models.user import User, Role
 from copy import deepcopy
 import json
 
@@ -55,13 +56,20 @@ class SqlEventRepo:
         self.session.commit()
         return True
 
-    def query_events(self, query: EventQuery, page: int, page_size: int) -> list[Event]:
+    def query_events(self, query: EventQuery, page: int, page_size: int, user: User | None = None) -> list[Event]:
         query.validate()
         if page < 1 or page_size < 1:
             raise ValueError("page and page_size must be positive")
         models = self.session.query(EventModel).options(
             selectinload(EventModel.tags), selectinload(EventModel.collaborators)
         )
+        rank = user.role.value if user is not None and isinstance(user.role, Role) else (user.role if user is not None else -1)
+        if rank < Role.MODERATOR.value:
+            visible = EventModel.visible.is_(True)
+            if user is not None:
+                owned_accounts = select(SiteAccountModel.id).where(SiteAccountModel.creator_id == user.id)
+                visible = visible | EventModel.owner_id.in_(owned_accounts)
+            models = models.filter(visible)
         included = sorted(set(query.included_tags))
         if query.organizer_ids:
             models = models.filter(EventModel.owner_id.in_(query.organizer_ids))
@@ -134,6 +142,7 @@ class SqlEventRepo:
         # Resolve both collections before changing an existing model.
         tags = self._resolve_ids(TagModel, event.tags)
         collaborators = self._resolve_ids(SiteAccountModel, event.collaborators)
+        model.visible = event.visible
         model.name = event.name
         model.description = event.description
         model.from_ = event.from_
@@ -152,6 +161,7 @@ class SqlEventRepo:
     def _to_domain(model: EventModel) -> Event:
         return Event(
             id=model.id,
+            visible=model.visible,
             name=model.name,
             description=model.description,
             from_=model.from_,

@@ -21,6 +21,8 @@ from app.database_models.location_model import LocationModel
 from app.database_models.site_account.site_account_model import SiteAccountModel
 from app.database_models.tags.tag_model import TagModel
 from app.database_models.user_model import UserModel
+from app.database_models.subscriptions.event_subscription_model import EventSubscriptionModel
+from app.database_models.subscriptions.site_account_subscription_model import SiteAccountSubscriptionModel
 from app.domain_models.Location import Location
 from app.domain_models.events.event import Event
 from app.domain_models.events.event_query import EventQuery
@@ -56,6 +58,7 @@ def postgis_session():
                 db.metadata.create_all(connection, checkfirst=False, tables=[
                     UserModel.__table__, SiteAccountModel.__table__, TagModel.__table__,
                     LocationModel.__table__, EventModel.__table__, event_tags, event_collaborators,
+                    EventSubscriptionModel.__table__, SiteAccountSubscriptionModel.__table__,
                 ])
                 with Session(connection) as session:
                     yield session
@@ -274,7 +277,11 @@ def test_http_create_site_publish_query_edit_and_delete_event(postgis_session, a
         "contact": [{"type": "email", "adress": "owner@example.com"}], "description": "Organizer details",
     })
     assert response.status_code == 200, response.json
-    details = client.get(f"/v1/site_accounts/{organizer.id}").json
+    site_path = f"/v1/site_accounts/{organizer.id}"
+    assert client.get(site_path).status_code == 404
+    response = client.get(site_path, headers=owner_auth)
+    assert response.status_code == 200, response.json
+    details = response.json
     assert details["picture"].startswith("https://test.example/v1/image/")
     assert details["banner"].startswith("https://test.example/v1/image/")
     tag = TagModel(name="Music")

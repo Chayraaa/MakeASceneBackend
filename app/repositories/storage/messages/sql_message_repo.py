@@ -17,6 +17,7 @@ class SqlMessageRepo:
         try:
             model = MessageModel(
                 user_id=message.user_id,
+                title=message.title,
                 message=message.message,
                 sent_at=message.sent_at,
                 read=message.read,
@@ -58,6 +59,7 @@ class SqlMessageRepo:
                 logger.warning("Cannot update message %s: not found", message.id)
                 return False
             model.user_id = message.user_id
+            model.title = message.title
             model.message = message.message
             model.sent_at = message.sent_at
             model.read = message.read
@@ -89,6 +91,7 @@ class SqlMessageRepo:
         return Message(
             id=model.id,
             user_id=model.user_id,
+            title=model.title,
             message=model.message,
             sent_at=model.sent_at,
             read=model.read,

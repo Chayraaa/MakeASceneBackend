@@ -2162,8 +2162,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: ''
-      security:
-        - BearerAuth: []
+      security: []
 webhooks: {}
 components:
   schemas:

@@ -179,9 +179,9 @@ def delete_event(user: User, id: int):
 
 
 @events.route("", methods=["GET"])
-@login_required(role=Role.USER)
+@login_required(optional=True)
 @validate
-def query_events(user: User):
+def query_events(user: User | None):
     args = request.args
     try:
         query = EventQuery(

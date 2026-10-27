@@ -130,6 +130,16 @@ def test_event_public_read_matches_spec(api):
     assert api.client.get("/v1/event/999").status_code == 404
 
 
+def test_event_query_allows_anonymous_requests(api):
+    response = api.client.get("/v1/event")
+
+    assert response.status_code == 200
+    assert len(response.get_json()) == 1
+    assert api.service.query_events.call_args.kwargs == {
+        "page": 1, "page_size": 25, "user": None,
+    }
+
+
 def test_event_query_maps_spec_parameters(api):
     response = api.client.get("/v1/event", headers=authorization(api), query_string=[
         ("included_tags", "1"), ("included_tags", "2"), ("excluded_tags", "3"),
@@ -153,7 +163,7 @@ def test_event_query_maps_spec_parameters(api):
 
 
 @pytest.mark.parametrize("method, path", [("post", "/v1/event"), ("patch", "/v1/event/123"),
-                                         ("delete", "/v1/event/123"), ("get", "/v1/event")])
+                                         ("delete", "/v1/event/123")])
 def test_event_requires_authentication(api, method, path):
     response = getattr(api.client, method)(path, json={})
     assert response.status_code == 401

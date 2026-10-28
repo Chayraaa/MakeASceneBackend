@@ -84,9 +84,10 @@ def _response(event: Event, accounts: dict | None = None, places: dict | None = 
     result["place-data"] = places[event.place_id]
     result["owner-name"] = owner.name if owner else ""
     result["owner-picture"] = owner.picture if owner else ""
+    collaborator_ids = event.collaborators if event.accepted_collaborators is None else event.accepted_collaborators
     result["collaborators"] = [
         {"collaborator-id": site.id, "collaborator-name": site.name, "collaborator-picture": site.picture}
-        for site in (account(site_id) for site_id in event.collaborators) if site is not None
+        for site in (account(site_id) for site_id in collaborator_ids) if site is not None
     ]
     if event.repeating is None:
         result.pop("repeating")
@@ -170,6 +171,14 @@ def delete_event(user: User, id: int):
     value = current_app.event_service.get_event_by_id(id)
     if value is None:
         return _error("Event not found.", 404)
+    if "site_account" in request.args:
+        try:
+            site_account_id = int(request.args["site_account"])
+        except ValueError:
+            return _error("site_account must be an integer.", 422)
+        if current_app.event_service.leave_collaboration(user, id, site_account_id):
+            return {"message": "Left collaboration."}, 200
+        return _error("Accepted collaboration not found for this site account.", 404)
     denied = _site_permission(user, value.owner_id)
     if denied is not None:
         return denied

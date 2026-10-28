@@ -298,7 +298,7 @@ paths:
       security:
         - BearerAuth: []
     get:
-      summary: Get info about a site account
+      summary: Get info about a site account subscription
       deprecated: false
       description: Gets info about one site account
       operationId: infoSiteAccount
@@ -396,6 +396,109 @@ paths:
           description: ''
       security:
         - BearerAuth: []
+  /users/me/site_accounts/owned:
+    get:
+      summary: Get the site accounts you are a part of
+      deprecated: false
+      description: Get the site accounts you manage
+      operationId: getOwnedSiteAccounts
+      tags:
+        - Users
+        - Site Account
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteAccount'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/site_accounts/invites:
+    get:
+      summary: Get all invitations for event collabs
+      deprecated: false
+      description: Gets all the invites for event collabs
+      operationId: getEventInvites
+      tags:
+        - Users
+        - Site Account
+        - Event
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          example: 1
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: ID
+                    event_id:
+                      type: integer
+                    inviting:
+                      type: integer
+                  required:
+                    - id
+                    - event_id
+                    - inviting
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
   /users/me/site_accounts:
     get:
       summary: Get all subscribed site accounts
@@ -429,6 +532,92 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SiteAccountSubscriptionInfo'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/events/owned:
+    get:
+      summary: Get the events a site account you own created
+      deprecated: false
+      description: Gets info about the events you created
+      operationId: ownedEventInfo
+      tags:
+        - Users
+        - Event
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventObject'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+  /users/me/events/collaboration:
+    get:
+      summary: Get the events a site account you own collaborates with
+      deprecated: false
+      description: Gets info about the events you collaborate with
+      operationId: collabedEventInfo
+      tags:
+        - Users
+        - Event
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventObject'
           headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -493,7 +682,7 @@ paths:
       security:
         - BearerAuth: []
     get:
-      summary: Get info about an event
+      summary: Get info about an event subscription
       deprecated: false
       description: Gets info about one event
       operationId: infoEvent
@@ -1820,6 +2009,56 @@ paths:
           description: ''
       security:
         - BearerAuth: []
+  /site_accounts/answer/{id}:
+    post:
+      summary: Handle event invites
+      deprecated: false
+      description: Accept or reject a collab for an event
+      operationId: handleEventInvites
+      tags:
+        - Event
+        - Site Account
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accepted:
+                  type: boolean
+              required:
+                - accepted
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
   /image/{key}:
     get:
       summary: Get image
@@ -1969,7 +2208,7 @@ paths:
     delete:
       summary: Delete Event
       deprecated: false
-      description: Deletes and existing event
+      description: With site_account, leaves only the selected account's accepted collaboration, which must belong to the authenticated user. Without site_account, deletes the event with owner or moderator permission.
       operationId: deleteEvent
       tags:
         - Event
@@ -1978,6 +2217,12 @@ paths:
           in: path
           description: ''
           required: true
+          schema:
+            type: integer
+        - name: site_account
+          in: query
+          description: Owned site account whose accepted collaboration should be removed. The event is preserved.
+          required: false
           schema:
             type: integer
       responses:
@@ -1994,6 +2239,7 @@ paths:
                       - Deletion was successful.
                 required:
                   - message
+          headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Authentication failed

@@ -53,6 +53,7 @@ def api(app, session):
     app.event_service.create_event.return_value = True
     app.event_service.update_event.return_value = True
     app.event_service.remove_event.return_value = True
+    app.event_service.leave_collaboration.return_value = False
     app.event_service.query_events.return_value = [value]
     app.location_service = Mock()
     app.location_service.get_location_data.return_value = Location(
@@ -356,3 +357,125 @@ def test_invalid_timezone_does_not_change_user(api, zone):
 @pytest.mark.parametrize("path", ["/v1/event/123", "/v1/site_accounts/1", "/v1/site_accounts?q=Owner"])
 def test_optional_authentication_rejects_bad_tokens(api, path):
     assert api.client.get(path, headers={"Authorization": "Bearer invalid"}).status_code == 401
+
+
+def test_owned_site_accounts_are_scoped_and_paginated(api):
+    api.sites.create_site_account("Second owned site", api.actors["owner"])
+    path = "/v1/users/me/site_accounts/owned"
+    response = api.client.get(path, headers=authorization(api))
+    assert response.status_code == 200
+    assert [site["name"] for site in response.json] == ["Owner site", "Second owned site"]
+    assert all(not site["visible"] for site in response.json)
+    response = api.client.get(path + "?page=2&page_size=1", headers=authorization(api))
+    assert [site["name"] for site in response.json] == ["Second owned site"]
+    response = api.client.get(path, headers=authorization(api, "moderator"))
+    assert response.json == []
+
+
+def test_owned_events_response(api):
+    api.service.get_owned_events.return_value = [api.event]
+    response = api.client.get("/v1/users/me/events/owned?page=2&page_size=3", headers=authorization(api))
+    assert response.status_code == 200
+    assert response.json[0]["id"] == api.event.id
+    assert response.json[0]["owner-name"] == api.owner.name
+    with open(api.app.root_path + "/static/makeascene.openapi.yaml", encoding="utf-8") as source:
+        spec = yaml.safe_load(source)
+    registry = Registry().with_resource("urn:test-api", Resource(spec, DRAFT202012))
+    Draft202012Validator(
+        {"$ref": "urn:test-api#/paths/~1users~1me~1events~1owned/get/responses/200/content/application~1json/schema"},
+        registry=registry, format_checker=FormatChecker(),
+    ).validate(response.get_json())
+    api.service.get_owned_events.assert_called_once_with(api.actors["owner"], 2, 3)
+
+
+@pytest.mark.parametrize("target", ["events", "site_accounts"])
+def test_owned_queries_require_auth_and_positive_pagination(api, target):
+    path = f"/v1/users/me/{target}/owned"
+    assert api.client.get(path).status_code == 401
+    assert api.client.get(path + "?page=0", headers=authorization(api)).status_code == 422
+    assert api.client.get(path + "?page_size=0", headers=authorization(api)).status_code == 422
+
+
+@pytest.mark.parametrize("accepted", [False, True])
+def test_event_invitation_routes(api, session, accepted):
+    from sqlalchemy import text
+    from app.repositories.storage.events.sql_event_repo import SqlEventRepo
+
+    session.execute(text("INSERT INTO locations (place_id, details) VALUES ('venue', '{}')"))
+    session.commit()
+    SqlEventRepo(session).create_event(api.event)
+    api.service.get_event_by_id.side_effect = SqlEventRepo(session).get_event_by_id
+    assert api.client.get(f"/v1/event/{api.event.id}").json["collaborators"] == []
+    path = "/v1/users/me/site_accounts/invites"
+    assert api.client.get(path).status_code == 401
+    assert api.client.get(path + "?page=0", headers=authorization(api, "collaborator")).status_code == 422
+    assert api.client.get(path, headers=authorization(api)).json == []
+    response = api.client.get(path, headers=authorization(api, "collaborator"))
+    assert response.status_code == 200
+    invite = response.json[0]
+    assert invite["event_id"] == api.event.id
+    assert invite["inviting"] == api.owner.id
+    answer = f"/v1/site_accounts/answer/{invite['id']}"
+    assert api.client.post(answer, json={"accepted": accepted}).status_code == 401
+    assert api.client.post(answer, json={"accepted": accepted}, headers=authorization(api)).status_code == 404
+    assert api.client.post(answer, json={"accepted": "true"}, headers=authorization(api, "collaborator")).status_code == 422
+    assert api.client.post(answer, json={"accepted": accepted}, headers=authorization(api, "collaborator")).status_code == 200
+    assert api.client.get(path, headers=authorization(api, "collaborator")).json == []
+    assert api.client.post(answer, json={"accepted": accepted}, headers=authorization(api, "collaborator")).status_code == 404
+    stored = SqlEventRepo(session).get_event_by_id(api.event.id)
+    assert stored.accepted_collaborators == ([api.collaborator.id] if accepted else [])
+    public = api.client.get(f"/v1/event/{api.event.id}")
+    assert public.status_code == 200
+    assert [site["collaborator-id"] for site in public.json["collaborators"]] == ([api.collaborator.id] if accepted else [])
+
+
+@pytest.mark.parametrize("actor", ["collaborator", "moderator"])
+def test_collaboration_query_and_leave_routes(api, session, actor):
+    from sqlalchemy import text
+    from app.database_models.events.event_model import event_collaborators
+    from app.repositories.storage.events.sql_event_repo import SqlEventRepo
+
+    api.collaborator.creator_id = api.actors[actor].id
+    api.sites.update_site_account(api.collaborator)
+    session.execute(text("INSERT INTO locations (place_id, details) VALUES ('venue', '{}')"))
+    session.commit()
+    repo = SqlEventRepo(session)
+    repo.create_event(api.event)
+    api.service.get_collaboration_events.side_effect = lambda user, page, size: repo.get_collaboration_events(user.id, page, size)
+    api.service.leave_collaboration.side_effect = lambda user, event_id, site_id: repo.leave_collaboration(user.id, event_id, site_id)
+    api.service.get_event_by_id.side_effect = repo.get_event_by_id
+    path = "/v1/users/me/events/collaboration"
+    assert api.client.get(path).status_code == 401
+    assert api.client.get(path + "?page=0", headers=authorization(api, actor)).status_code == 422
+    assert api.client.get(path + "?page_size=0", headers=authorization(api, actor)).status_code == 422
+    assert api.client.get(path, headers=authorization(api, actor)).json == []
+    session.execute(event_collaborators.update().values(accepted=True))
+    session.commit()
+    session.expire_all()
+    response = api.client.get(path + "?page=1&page_size=1", headers=authorization(api, actor))
+    assert response.status_code == 200
+    assert [event["id"] for event in response.json] == [api.event.id]
+    assert_schema(api, SimpleNamespace(get_json=lambda: response.json[0]), "EventObject")
+    assert api.client.get(path + "?page=2&page_size=1", headers=authorization(api, actor)).json == []
+    assert api.client.get(path, headers=authorization(api, "owner")).json == []
+    result = api.client.delete(f"/v1/event/{api.event.id}?site_account={api.collaborator.id}", headers=authorization(api, actor))
+    assert result.status_code == 200
+    assert result.json == {"message": "Left collaboration."}
+    api.service.remove_event.assert_not_called()
+    assert repo.get_event_by_id(api.event.id).collaborators == []
+    assert api.client.get(path, headers=authorization(api, actor)).json == []
+
+
+@pytest.mark.parametrize("actor", ["owner", "stranger", "moderator"])
+def test_leave_selector_never_deletes_event(api, actor):
+    response = api.client.delete("/v1/event/123?site_account=999", headers=authorization(api, actor))
+    assert response.status_code == 404
+    api.service.leave_collaboration.assert_called_once_with(api.actors[actor], 123, 999)
+    api.service.remove_event.assert_not_called()
+
+
+def test_leave_selector_validates_integer(api):
+    response = api.client.delete("/v1/event/123?site_account=invalid", headers=authorization(api))
+    assert response.status_code == 422
+    api.service.leave_collaboration.assert_not_called()
+    api.service.remove_event.assert_not_called()

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, true, Column, DateTime, ForeignKey, Integer, JSON, String, Table
+from sqlalchemy import Boolean, true, Column, DateTime, ForeignKey, Integer, JSON, String, Table, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
@@ -17,8 +17,11 @@ event_tags = Table(
 event_collaborators = Table(
     "event_collaborators",
     db.metadata,
-    Column("event_id", Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True),
-    Column("site_account_id", Integer, ForeignKey("site_accounts.id", ondelete="CASCADE"), primary_key=True),
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("event_id", Integer, ForeignKey("events.id", ondelete="CASCADE"), nullable=False),
+    Column("site_account_id", Integer, ForeignKey("site_accounts.id", ondelete="CASCADE"), nullable=False),
+    Column("accepted", Boolean, nullable=False, default=False, server_default=false()),
+    UniqueConstraint("event_id", "site_account_id", name="uq_event_collaborators_event_site"),
 )
 
 
@@ -42,6 +45,12 @@ class EventModel(db.Model):
     owner = relationship("SiteAccountModel", back_populates="owned_events")
     collaborators = relationship(
         "SiteAccountModel", secondary=event_collaborators, back_populates="collaborating_events"
+    )
+    accepted_collaborators = relationship(
+        "SiteAccountModel", secondary=event_collaborators,
+        primaryjoin=lambda: (EventModel.id == event_collaborators.c.event_id)
+                            & event_collaborators.c.accepted.is_(True),
+        viewonly=True, lazy="selectin",
     )
     tags = relationship("TagModel", secondary=event_tags, back_populates="events")
     location = relationship("LocationModel")

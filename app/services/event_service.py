@@ -263,3 +263,16 @@ class EventService:
                     logger.error("Failed to notify user %s about event %s", user.id, event.id)
             except Exception:
                 logger.exception("Failed to notify user %s about event %s", user.id, event.id)
+
+    def get_owned_events(self, user: User, page: int = 1, page_size: int = 25) -> list[Event]:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        return self.event_repo.get_owned_events(user.id, page, page_size)
+
+    def get_collaboration_events(self, user: User, page: int = 1, page_size: int = 25) -> list[Event]:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        return self.event_repo.get_collaboration_events(user.id, page, page_size)
+
+    def leave_collaboration(self, user: User, event_id: int, site_account_id: int) -> bool:
+        return self.event_repo.leave_collaboration(user.id, event_id, site_account_id)

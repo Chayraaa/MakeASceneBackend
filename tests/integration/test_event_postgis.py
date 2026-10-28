@@ -226,6 +226,17 @@ def test_use_case_create_site_accounts_publish_event_and_find_it(postgis_session
         from_=start, till=start + timedelta(hours=3),
         longitude=13.405, latitude=52.52, radius_m=1000,
     )
+    # New collaborators stay pending until their account owner accepts.
+    assert saved.accepted_collaborators == []
+    assert event_service.query_events(query, page=1, page_size=1) == []
+    invitations = site_service.get_event_invites(creator)
+    assert len(invitations) == 5
+    assert all(invite["inviting"] == owner.id for invite in invitations)
+    for invite in invitations:
+        assert site_service.answer_event_invite(creator, invite["id"], True)
+    assert site_service.get_event_invites(creator) == []
+    assert event_service.get_event_by_id(published.id).accepted_collaborators == [collaborator.id]
+
     first_page = event_service.query_events(query, page=1, page_size=1)
     second_page = event_service.query_events(query, page=2, page_size=1)
     assert [event.id for event in first_page] == [published.id]
@@ -298,6 +309,20 @@ def test_http_create_site_publish_query_edit_and_delete_event(postgis_session, a
     created_tag = session.query(TagModel).filter_by(name="New concert tag").one()
     assert created_tag.parent_id is None
     app.tag_service.search_engine_repo.add_tag.assert_called_once()
+    invitations = client.get("/v1/users/me/site_accounts/invites", headers=owner_auth)
+    assert invitations.status_code == 200, invitations.json
+    assert len(invitations.json) == 1
+    invitation = invitations.json[0]
+    assert invitation["inviting"] == organizer.id
+    pending = client.get(f"/v1/event/{invitation['event_id']}", headers=owner_auth)
+    assert pending.status_code == 200, pending.json
+    assert pending.json["collaborators"] == []
+    response = client.post(
+        f"/v1/site_accounts/answer/{invitation['id']}",
+        headers=owner_auth, json={"accepted": True},
+    )
+    assert response.status_code == 200, response.json
+    assert client.get("/v1/users/me/site_accounts/invites", headers=owner_auth).json == []
     response = client.get("/v1/event", headers=owner_auth, query_string={
         "included_tags": tag.id, "access": "wheelchair", "organisers": organizer.id,
         "long": 13.4, "lat": 52.5, "radius": 1000, "page": 1, "size": 1,

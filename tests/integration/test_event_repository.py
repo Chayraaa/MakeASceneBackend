@@ -121,6 +121,9 @@ def test_query_organizers_and_collaborators(event_session, event_value, organize
     repo = SqlEventRepo(event_session)
     for name, owner, participants in [("first", 1, [2]), ("second", 2, [1]), ("third", 1, [])]:
         assert repo.create_event(replace(event_value, id=None, name=name, owner_id=owner, collaborators=participants))
+    event_session.execute(event_collaborators.update().values(accepted=True))
+    event_session.commit()
+    event_session.expire_all()
     # No tag matches: fallback must still respect both site-account filters.
     query = EventQuery(
         organizer_ids=organizers, collaborator_ids=collaborators,
@@ -262,3 +265,155 @@ def test_event_query_visibility_permissions_before_pagination(event_session, eve
     assert [item.name for item in first] == ([event_value.name] if allowed else ["Public"])
     second = repo.query_events(EventQuery(), 2, 1, user=viewer)
     assert [item.name for item in second] == (["Public"] if allowed else [])
+
+
+def test_owned_events_filter_before_pagination(event_session, event_value):
+    from dataclasses import replace
+
+    user = UserModel(email="owner@example.com", password="hash")
+    event_session.add(user)
+    event_session.flush()
+    event_session.get(SiteAccountModel, 1).creator_id = user.id
+    event_session.commit()
+    repo = SqlEventRepo(event_session)
+    foreign = replace(event_value, id=None, owner_id=2, collaborators=[1])
+    hidden = replace(event_value, id=None, name="Hidden", visible=False)
+    public = replace(event_value, id=None, name="Public", visible=True)
+    for value in (foreign, hidden, public):
+        repo.create_event(value)
+    assert [event.id for event in repo.get_owned_events(user.id)] == [hidden.id, public.id]
+    assert [event.id for event in repo.get_owned_events(user.id, 2, 1)] == [public.id]
+    assert repo.get_owned_events(user.id, 3, 1) == []
+    assert repo.get_owned_events(999) == []
+
+
+@pytest.mark.parametrize("accepted", [False, True])
+def test_event_invitation_lifecycle(event_session, event_value, accepted):
+    from app.repositories.storage.site_account.sql_site_account_repo import SqlSiteAccountRepo
+    from app.domain_models.events.event_query import EventQuery
+
+    recipient = UserModel(email="recipient@example.com", password="hash")
+    other = UserModel(email="other@example.com", password="hash", role=2)
+    event_session.add_all([recipient, other])
+    event_session.flush()
+    event_session.get(SiteAccountModel, 2).creator_id = recipient.id
+    event_session.commit()
+    events = SqlEventRepo(event_session)
+    sites = SqlSiteAccountRepo(event_session)
+    events.create_event(event_value)
+    pending = sites.get_event_invites(recipient.id)
+    assert len(pending) == 1
+    invite = pending[0]
+    assert invite == {"id": invite["id"], "event_id": event_value.id, "inviting": 1}
+    assert sites.get_event_invites(other.id) == []
+    assert not sites.answer_event_invite(other.id, invite["id"], True)
+    assert events.get_event_by_id(event_value.id).accepted_collaborators == []
+    assert events.query_events(EventQuery(collaborator_ids=[2]), 1, 25) == []
+    assert sites.answer_event_invite(recipient.id, invite["id"], accepted)
+    assert sites.get_event_invites(recipient.id) == []
+    assert not sites.answer_event_invite(recipient.id, invite["id"], accepted)
+    loaded = events.get_event_by_id(event_value.id)
+    assert loaded.collaborators == ([2] if accepted else [])
+    assert loaded.accepted_collaborators == ([2] if accepted else [])
+    assert len(events.query_events(EventQuery(collaborator_ids=[2]), 1, 25)) == int(accepted)
+    # Editing the event preserves accepted status, while re-inviting after rejection is pending.
+    loaded.collaborators = [2]
+    events.update_event(loaded)
+    event_session.expire_all()
+    assert events.get_event_by_id(event_value.id).accepted_collaborators == ([2] if accepted else [])
+    assert len(sites.get_event_invites(recipient.id)) == int(not accepted)
+
+
+def test_event_invites_paginate_pending_rows(event_session, event_value):
+    from dataclasses import replace
+    from app.repositories.storage.site_account.sql_site_account_repo import SqlSiteAccountRepo
+
+    user = UserModel(email="recipient@example.com", password="hash")
+    event_session.add(user)
+    event_session.flush()
+    event_session.get(SiteAccountModel, 2).creator_id = user.id
+    event_session.commit()
+    events = SqlEventRepo(event_session)
+    sites = SqlSiteAccountRepo(event_session)
+    for index in range(3):
+        events.create_event(replace(event_value, id=None, name=str(index)))
+    first = sites.get_event_invites(user.id, 1, 1)[0]
+    assert sites.answer_event_invite(user.id, first["id"], True)
+    remaining = sites.get_event_invites(user.id)
+    assert len(remaining) == 2
+    assert sites.get_event_invites(user.id, 2, 1) == remaining[1:]
+    assert sites.get_event_invites(user.id, 3, 1) == []
+
+
+def test_invitation_migration_preserves_existing_collaborations(event_session, event_value):
+    import importlib
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    from sqlalchemy import text
+
+    SqlEventRepo(event_session).create_event(event_value)
+    connection = event_session.connection()
+    connection.execute(text("DROP TABLE event_collaborators"))
+    connection.execute(text(
+        "CREATE TABLE event_collaborators ("
+        "event_id INTEGER REFERENCES events(id) ON DELETE CASCADE, "
+        "site_account_id INTEGER REFERENCES site_accounts(id) ON DELETE CASCADE, "
+        "PRIMARY KEY (event_id, site_account_id))"
+    ))
+    connection.execute(text("INSERT INTO event_collaborators VALUES (:event, 2)"), {"event": event_value.id})
+    migration = importlib.import_module("migrations.versions.e2f4a67b901c_event_collaborator_invitations")
+    with Operations.context(MigrationContext.configure(connection)):
+        migration.upgrade()
+        rows = connection.execute(text("SELECT id, event_id, site_account_id, accepted FROM event_collaborators")).all()
+        assert rows == [(1, event_value.id, 2, 1)]
+        connection.execute(text("INSERT INTO event_collaborators (event_id, site_account_id) VALUES (:event, 1)"), {"event": event_value.id})
+        assert connection.execute(text("SELECT id, accepted FROM event_collaborators WHERE site_account_id = 1")).one() == (2, 0)
+        migration.downgrade()
+        assert set(connection.execute(text("SELECT * FROM event_collaborators")).all()) == {(event_value.id, 1), (event_value.id, 2)}
+
+
+def test_collaboration_events_and_leaving(event_session, event_value):
+    from dataclasses import replace
+
+    user = UserModel(email="collaborator@example.com", password="hash")
+    event_session.add(user)
+    event_session.flush()
+    event_session.get(SiteAccountModel, 2).creator_id = user.id
+    second = SiteAccountModel(name="second account", creator_id=user.id)
+    foreign = SiteAccountModel(name="foreign account")
+    event_session.add_all([second, foreign])
+    event_session.commit()
+    repo = SqlEventRepo(event_session)
+    pending = replace(event_value, id=None, name="Pending")
+    first = replace(event_value, id=None, name="First", visible=False, collaborators=[2, second.id, foreign.id])
+    last = replace(event_value, id=None, name="Last")
+    for event in (pending, first, last):
+        repo.create_event(event)
+    event_session.execute(event_collaborators.update().where(
+        event_collaborators.c.event_id.in_([first.id, last.id])
+    ).values(accepted=True))
+    event_session.commit()
+    event_session.expire_all()
+    assert [event.id for event in repo.get_collaboration_events(user.id)] == [first.id, last.id]
+    assert [event.id for event in repo.get_collaboration_events(user.id, 2, 1)] == [last.id]
+    assert repo.get_collaboration_events(user.id, 3, 1) == []
+    assert repo.get_collaboration_events(999) == []
+    assert not repo.leave_collaboration(user.id, pending.id, 2)
+    assert not repo.leave_collaboration(999, first.id, 2)
+    assert repo.leave_collaboration(user.id, first.id, 2)
+    assert not repo.leave_collaboration(user.id, first.id, 2)
+    loaded = repo.get_event_by_id(first.id)
+    assert loaded is not None
+    assert loaded.accepted_collaborators == [second.id, foreign.id]
+    assert loaded.collaborators == [second.id, foreign.id]
+    assert repo.get_event_by_id(pending.id).collaborators == [2]
+    assert [event.id for event in repo.get_collaboration_events(user.id)] == [first.id, last.id]
+    assert not repo.leave_collaboration(user.id, first.id, foreign.id)
+    assert repo.leave_collaboration(user.id, first.id, second.id)
+    assert [event.id for event in repo.get_collaboration_events(user.id)] == [last.id]
+
+
+@pytest.mark.parametrize("page,page_size", [(0, 25), (1, 0), (-1, 1)])
+def test_collaboration_events_validate_pagination(event_session, page, page_size):
+    with pytest.raises(ValueError):
+        SqlEventRepo(event_session).get_collaboration_events(1, page, page_size)

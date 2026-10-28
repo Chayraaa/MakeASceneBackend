@@ -239,3 +239,18 @@ class SiteAccountService:
                 page += 1
         except Exception:
             logger.exception("Failed to send new-event notifications for event %s", event.id)
+
+    def get_owned_site_accounts(self, user: User, page: int = 1, page_size: int = 25) -> list[SiteAccount]:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        return self.site_account_repo.get_owned_site_accounts(user.id, page, page_size)
+
+    def get_event_invites(self, user: User, page: int = 1, page_size: int = 25) -> list[dict[str, int]]:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        return self.site_account_repo.get_event_invites(user.id, page, page_size)
+
+    def answer_event_invite(self, user: User, invite_id: int, accepted: bool) -> bool:
+        if not isinstance(accepted, bool):
+            raise ValueError("accepted must be a boolean")
+        return self.site_account_repo.answer_event_invite(user.id, invite_id, accepted)

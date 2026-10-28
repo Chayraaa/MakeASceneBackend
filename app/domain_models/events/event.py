@@ -20,6 +20,7 @@ class Event:
     collaborators: list[int] = field(default_factory=list)
     id: int | None = None
     visible: bool = True
+    accepted_collaborators: list[int] | None = None
 
     def to_dict(self):
         return {

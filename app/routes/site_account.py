@@ -161,3 +161,13 @@ def delete_site_account_application(user: User, id: int):
         current_app.site_account_service.delete_application(application)
         return {"message": "Application deleted."}, 200
     return {"message": "You do not have permission to view this application."}, 401, []
+
+
+@site_account.route("/answer/<int:id>", methods=["POST"])
+@login_required()
+@validate
+def answer_event_invite(user: User, id: int):
+    accepted = request.get_json()["accepted"]
+    if current_app.site_account_service.answer_event_invite(user, id, accepted):
+        return {"message": "Invitation accepted." if accepted else "Invitation rejected."}, 200
+    return {"message": "Pending invitation not found."}, 404

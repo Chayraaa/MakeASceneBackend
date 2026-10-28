@@ -5,7 +5,9 @@ from app.domain_models.user import User
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
 from app.repositories.interfaces.storage.messages.message_storage_protocol import MessageStorageProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
+import os
 
+unsubscribe_url = os.environ.get("UNSUBSCRIBE_URL", "#")
 
 class MessageService:
     def __init__(self, message_repo: MessageStorageProtocol, email_repo: EmailProtocol, user_repo: UserRepoProtocol):
@@ -25,7 +27,7 @@ class MessageService:
         if user.email_preference:
             email_content = render_email_template(
                 "user_message.html", title=notify_message.title, message=notify_message.body,
-                unsubscribe_url="#",  # Placeholder until unsubscribe is implemented.
+                unsubscribe_url=unsubscribe_url,  # Placeholder until unsubscribe is implemented.
             )
             self.email_repo.send_email(subject=notify_message.title, body=email_content, recipient=user.email)
         return True

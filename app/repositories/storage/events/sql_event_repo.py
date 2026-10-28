@@ -1,5 +1,6 @@
 from app.domain_models.user import User, Role
 from copy import deepcopy
+from datetime import timezone
 import json
 
 from geoalchemy2 import Geography
@@ -7,7 +8,7 @@ from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import selectinload
 
-from app.database_models.events.event_model import EventModel, event_tags
+from app.database_models.events.event_model import EventModel, event_tags, event_collaborators
 from app.database_models.location_model import LocationModel
 from app.database_models.site_account.site_account_model import SiteAccountModel
 from app.database_models.tags.tag_model import TagModel
@@ -74,7 +75,7 @@ class SqlEventRepo:
         if query.organizer_ids:
             models = models.filter(EventModel.owner_id.in_(query.organizer_ids))
         if query.collaborator_ids:
-            models = models.filter(EventModel.collaborators.any(SiteAccountModel.id.in_(query.collaborator_ids)))
+            models = models.filter(EventModel.accepted_collaborators.any(SiteAccountModel.id.in_(query.collaborator_ids)))
         if query.excluded_tags:
             models = models.filter(~EventModel.tags.any(TagModel.id.in_(query.excluded_tags)))
         if query.access:
@@ -164,8 +165,9 @@ class SqlEventRepo:
             visible=model.visible,
             name=model.name,
             description=model.description,
-            from_=model.from_,
-            till=model.till,
+            # SQLite drops timezone metadata; stored naive timestamps represent UTC.
+            from_=model.from_ if model.from_.tzinfo is not None else model.from_.replace(tzinfo=timezone.utc),
+            till=model.till if model.till.tzinfo is not None else model.till.replace(tzinfo=timezone.utc),
             tags=sorted(tag.id for tag in model.tags),
             place_id=model.place_id,
             layout=model.layout,
@@ -175,4 +177,46 @@ class SqlEventRepo:
             repeating=model.repeating,
             detail_data=deepcopy(model.detail_data),
             collaborators=sorted(account.id for account in model.collaborators),
+            accepted_collaborators=sorted(account.id for account in model.accepted_collaborators),
         )
+
+    def get_owned_events(self, user_id: int, page: int = 1, page_size: int = 25) -> list[Event]:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        models = (
+            self.session.query(EventModel)
+            .options(selectinload(EventModel.tags), selectinload(EventModel.collaborators))
+            .join(SiteAccountModel, EventModel.owner_id == SiteAccountModel.id)
+            .filter(SiteAccountModel.creator_id == user_id)
+            .order_by(EventModel.id)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        return [self._to_domain(model) for model in models]
+
+    def get_collaboration_events(self, user_id: int, page: int = 1, page_size: int = 25) -> list[Event]:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        models = (
+            self.session.query(EventModel)
+            .options(selectinload(EventModel.tags), selectinload(EventModel.collaborators))
+            .filter(EventModel.accepted_collaborators.any(SiteAccountModel.creator_id == user_id))
+            .order_by(EventModel.id)
+            .offset((page - 1) * page_size).limit(page_size).all()
+        )
+        return [self._to_domain(model) for model in models]
+
+    def leave_collaboration(self, user_id: int, event_id: int, site_account_id: int) -> bool:
+        owned_sites = select(SiteAccountModel.id).where(SiteAccountModel.creator_id == user_id)
+        result = self.session.execute(
+            event_collaborators.delete().where(
+                event_collaborators.c.event_id == event_id,
+                event_collaborators.c.site_account_id == site_account_id,
+                event_collaborators.c.site_account_id.in_(owned_sites),
+                event_collaborators.c.accepted.is_(True),
+            )
+        )
+        self.session.commit()
+        self.session.expire_all()
+        return result.rowcount > 0

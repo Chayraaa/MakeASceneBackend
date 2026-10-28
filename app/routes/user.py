@@ -286,3 +286,56 @@ def set_site_account_notifications(user: User, id: int):
     notify = request.get_json()["notify"]
     result = current_app.site_account_service.set_site_account_notifications(user, id, notify)
     return _subscription_write_response(result, "Notification preference updated.")
+
+
+@users.route("/me/site_accounts/owned", methods=["GET"])
+@login_required()
+@validate
+def get_owned_site_accounts(user: User):
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+    accounts = current_app.site_account_service.get_owned_site_accounts(user, page, page_size)
+    return [account.to_dict() for account in accounts], 200
+
+
+@users.route("/me/events/owned", methods=["GET"])
+@login_required()
+@validate
+def get_owned_events(user: User):
+    from app.routes.event import _response
+
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+    events = current_app.event_service.get_owned_events(user, page, page_size)
+    accounts, places = {}, {}
+    return [_response(event, accounts, places) for event in events], 200
+
+
+@users.route("/me/site_accounts/invites", methods=["GET"])
+@login_required()
+@validate
+def get_event_invites(user: User):
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+    return current_app.site_account_service.get_event_invites(user, page, page_size), 200
+
+
+@users.route("/me/events/collaboration", methods=["GET"])
+@login_required()
+@validate
+def get_collaboration_events(user: User):
+    from app.routes.event import _response
+
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+    events = current_app.event_service.get_collaboration_events(user, page, page_size)
+    accounts, places = {}, {}
+    return [_response(event, accounts, places) for event in events], 200

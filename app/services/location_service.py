@@ -1,3 +1,7 @@
+import json
+from app.domain_models.user import User
+from app.domain_models.subscriptions.location_subscription import LocationSubscription
+from app.repositories.interfaces.storage.subscriptions.location_subscription_repo_protocol import LocationSubscriptionRepoProtocol
 from geoalchemy2.shape import from_shape
 import math
 from app.metrics.operation_metrics import monitored, location_sources
@@ -10,10 +14,12 @@ from app.repositories.interfaces.storage.location_storage_protocol import Locati
 
 
 class LocationService:
-    def __init__(self, location_search_repo: SearchEngineLocationProtocol, location_api_repo: LocationProtocol, location_storage: LocationStorageProtocol):
+    def __init__(self, location_search_repo: SearchEngineLocationProtocol, location_api_repo: LocationProtocol, location_storage: LocationStorageProtocol,
+                 subscription_repo: LocationSubscriptionRepoProtocol | None = None):
         self.location_search_repo = location_search_repo
         self.location_api_repo = location_api_repo
         self.location_storage = location_storage
+        self.subscription_repo = subscription_repo
 
     # Fetches the location details:
     # Prio 1: Location DB Table
@@ -80,3 +86,41 @@ class LocationService:
                 return ret_val
             else:
                 return res
+
+    def subscribe_to_location(self, user: User, place_id: str) -> bool | None:
+        location = self.get_location_data(place_id)
+        if location is None:
+            return None
+        if self.subscription_repo.get_by_user_and_location_id(user.id, location.id) is not None:
+            return True
+        return self.subscription_repo.create(LocationSubscription(user_id=user.id, location_id=location.id))
+
+    def unsubscribe_from_location(self, user: User, place_id: str) -> bool | None:
+        location = self.location_storage.get_location_by_place_id(place_id)
+        if location is None:
+            return None
+        subscription = self.subscription_repo.get_by_user_and_location_id(user.id, location.id)
+        if subscription is None or subscription.user_id != user.id:
+            return None
+        return self.subscription_repo.delete(subscription)
+
+    def get_saved_locations(self, user: User, page: int = 1, page_size: int = 25) -> list[dict] | None:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page_size must be positive")
+        subscriptions = self.subscription_repo.get_by_user_id(user.id, page, page_size)
+        if subscriptions is None:
+            return None
+        locations = []
+        for subscription in subscriptions:
+            location = self.location_storage.get_location(subscription.location_id)
+            if location is None:
+                return None
+            details = json.loads(location.details) if isinstance(location.details, str) else location.details
+            locations.append({
+                "id": location.place_id,
+                "name": details.get("name") or details.get("formatted", ""),
+                "formatted": details.get("formatted", ""),
+                "lat": details["lat"],
+                "lon": details["lon"],
+            })
+        return locations

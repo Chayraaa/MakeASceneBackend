@@ -1,6 +1,6 @@
 from copy import deepcopy
 from datetime import datetime, timezone
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -70,10 +70,10 @@ def test_missing_update_does_not_upload(event_value):
 def test_query_resolves_fence_and_delegates_pagination():
     repo, locations = Mock(), Mock()
     repo.query_events.return_value = []
-    query = EventQuery(place_id="city", access=["wheelchair"], include_partial=True)
+    query = EventQuery(place_ids=["city", "other-city", "city"], access=["wheelchair"], include_partial=True)
     service = EventService(repo, locations, Mock())
     assert service.query_events(query, page=2, page_size=10) == repo.query_events.return_value
-    locations.get_location_data.assert_called_once_with("city")
+    assert locations.get_location_data.call_args_list == [call("city"), call("other-city")]
     repo.query_events.assert_called_once_with(query, 2, 10)
 
 
@@ -133,7 +133,7 @@ def test_unresolved_query_location_does_not_query():
     repo, locations = Mock(), Mock()
     locations.get_location_data.return_value = None
     with pytest.raises(ValueError, match='location'):
-        EventService(repo, locations, Mock()).query_events(EventQuery(place_id='unknown'))
+        EventService(repo, locations, Mock()).query_events(EventQuery(place_ids=['unknown']))
     repo.query_events.assert_not_called()
 
 

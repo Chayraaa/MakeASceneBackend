@@ -6,7 +6,7 @@ import json
 from geoalchemy2 import Geography
 from sqlalchemy import cast, func, select
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from app.database_models.events.event_model import EventModel, event_tags, event_collaborators
 from app.database_models.location_model import LocationModel
@@ -87,13 +87,15 @@ class SqlEventRepo:
         if query.till is not None:
             models = models.filter(EventModel.from_ <= query.till)
 
-        if query.place_id is not None or query.geofence is not None or query.radius_m is not None:
+        if query.place_ids or query.geofence is not None or query.radius_m is not None:
             models = models.join(LocationModel, EventModel.place_id == LocationModel.place_id)
-            if query.place_id is not None:
-                fence = select(LocationModel.geometry).where(
-                    LocationModel.place_id == query.place_id
-                ).correlate(None).scalar_subquery()
-                models = models.filter(func.ST_Intersects(LocationModel.geometry, fence))
+            if query.place_ids:
+                fence = aliased(LocationModel)
+                matching_place = select(fence.id).where(
+                    fence.place_id.in_(query.place_ids),
+                    func.ST_Intersects(LocationModel.geometry, fence.geometry),
+                ).correlate(LocationModel).exists()
+                models = models.filter(matching_place)
             if query.geofence is not None:
                 fence = func.ST_SetSRID(func.ST_GeomFromGeoJSON(json.dumps(query.geofence)), 4326)
                 models = models.filter(func.ST_Intersects(LocationModel.geometry, fence))

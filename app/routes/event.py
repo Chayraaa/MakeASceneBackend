@@ -199,7 +199,7 @@ def query_events(user: User | None):
             access=args.getlist("access"), name=args.get("name"),
             from_=_date(args["from"]) if "from" in args else None,
             till=_date(args["till"]) if "till" in args else None,
-            place_id=args.get("place-id"),
+            place_ids=args.getlist("place-id"),
             longitude=float(args["long"]) if "long" in args else None,
             latitude=float(args["lat"]) if "lat" in args else None,
             radius_m=float(args["radius"]) if "radius" in args else None,

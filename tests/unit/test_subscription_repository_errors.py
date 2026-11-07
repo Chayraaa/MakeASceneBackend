@@ -1,3 +1,5 @@
+from app.domain_models.subscriptions.location_subscription import LocationSubscription
+from app.repositories.storage.subscriptions.sql_location_subscription_repo import SqlLocationSubscriptionRepo
 from unittest.mock import Mock
 
 import pytest
@@ -9,7 +11,7 @@ from app.repositories.storage.subscriptions.sql_event_subscription_repo import S
 from app.repositories.storage.subscriptions.sql_site_account_subscription_repo import SqlSiteAccountSubscriptionRepo
 
 
-@pytest.fixture(params=[("event", EventSubscription, SqlEventSubscriptionRepo),
+@pytest.fixture(params=[("location", LocationSubscription, SqlLocationSubscriptionRepo),("event", EventSubscription, SqlEventSubscriptionRepo),
                         ("site_account", SiteAccountSubscription, SqlSiteAccountSubscriptionRepo)])
 def subscription_repo(request):
     kind, domain, repo_type = request.param

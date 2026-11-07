@@ -22,6 +22,7 @@ from app.database_models.site_account.site_account_model import SiteAccountModel
 from app.database_models.tags.tag_model import TagModel
 from app.database_models.user_model import UserModel
 from app.database_models.subscriptions.event_subscription_model import EventSubscriptionModel
+from app.database_models.subscriptions.location_subscription_model import LocationSubscriptionModel
 from app.database_models.subscriptions.site_account_subscription_model import SiteAccountSubscriptionModel
 from app.domain_models.Location import Location
 from app.domain_models.events.event import Event
@@ -59,6 +60,7 @@ def postgis_session():
                     UserModel.__table__, SiteAccountModel.__table__, TagModel.__table__,
                     LocationModel.__table__, EventModel.__table__, event_tags, event_collaborators,
                     EventSubscriptionModel.__table__, SiteAccountSubscriptionModel.__table__,
+                    LocationSubscriptionModel.__table__,
                 ])
                 with Session(connection) as session:
                     yield session
@@ -113,11 +115,11 @@ def test_radius_access_ranking_and_pagination(postgis_repo):
 
 
 def test_place_geometry_and_geojson_fence(postgis_repo):
-    query = EventQuery(place_id="city", access=["wheelchair", "adults"])
+    query = EventQuery(place_ids=["city"], access=["wheelchair", "adults"])
     assert {event.name for event in postgis_repo.query_events(query, 1, 20)} == {
         "both", "dogs", "gaming", "fallback",
     }
-    query.place_id = None
+    query.place_ids = []
     query.geofence = {"type": "Polygon", "coordinates": [
         [[13, 52], [14, 52], [14, 53], [13, 53], [13, 52]],
     ]}
@@ -396,3 +398,14 @@ def test_location_repository_crud(postgis_session):
     assert json.loads(repo.get_location(location.id).details) == {'name': 'Serialized'}
     assert repo.remove_location(location)
     assert repo.get_location(location.id) is None
+
+
+def test_multiple_places_match_any_fence_without_duplicates(postgis_repo):
+    query = EventQuery(place_ids=["city", "near", "far", "city"], access=["wheelchair", "adults"])
+    expected = ["both", "dogs", "gaming", "fallback", "far"]
+    assert [event.name for event in postgis_repo.query_events(query, 1, 20)] == expected
+    assert [event.name for event in postgis_repo.query_events(query, 2, 2)] == expected[2:4]
+    query.place_ids = ["far"]
+    assert [event.name for event in postgis_repo.query_events(query, 1, 20)] == ["far"]
+    query.place_ids = []
+    assert [event.name for event in postgis_repo.query_events(query, 1, 20)] == expected

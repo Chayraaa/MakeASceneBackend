@@ -1,10 +1,11 @@
-from types import SimpleNamespace
+from datetime import datetime, timezone
 from unittest.mock import Mock
 
 import pytest
 from authlib.integrations.base_client import MismatchingStateError
 
 from app import create_app
+from app.domain_models.user import User
 from app.services.password_service import PasswordService
 
 
@@ -20,7 +21,7 @@ def client(route_app, monkeypatch):
     for name in ('auth_service', 'user_service', 'google_oauth_service', 'tag_service', 'google'):
         monkeypatch.setattr(route_app, name, Mock())
     monkeypatch.setattr(PasswordService, 'verify_token', Mock(return_value=1))
-    route_app.user_service.get_user.return_value = SimpleNamespace(id=1, email='a@example.com', mature=True, email_preference=True, role=0, timezone='UTC')
+    route_app.user_service.get_user.return_value = User(id=1, hashed_password='hashed', created_at=datetime.now(timezone.utc), email='a@example.com')
     return route_app.test_client()
 
 
@@ -103,4 +104,5 @@ def test_user_settings_preserve_false_values(client):
     assert response.status_code == 200, response.json
     assert response.json['mature'] is False and response.json['email_preference'] is False
     assert response.json['timezone'] == 'UTC'
+    assert response.json['role'] == 0
     client.application.user_service.update_user.assert_called_once()

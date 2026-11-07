@@ -208,6 +208,8 @@ bash populate_tags.sh
 ```bash
 pytest
 pytest --cov=app tests/   # with coverage
+pytest -n auto           # parallel workers based on available CPU cores
+pytest -n 4 --cov=app tests/   # four parallel workers with combined coverage
 ```
 
 ---

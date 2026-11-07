@@ -43,7 +43,7 @@ jobs:
           pip install pytest-cov
 
       - name: Run tests with coverage
-        run: pytest -v --cov=app --cov-report=term --cov-report=xml --cov-fail-under=70
+        run: pytest -n auto -v --cov=app --cov-report=term --cov-report=xml --cov-fail-under=70
 
       - name: Validate monitoring configuration
         run: >-

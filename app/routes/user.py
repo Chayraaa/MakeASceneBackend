@@ -4,10 +4,54 @@ from flask import Blueprint, request, current_app, url_for
 
 from app import validate, login_required
 from app.domain_models.tags.tag import Tag
-from app.domain_models.user import User
+from app.domain_models.user import Role, User
 
 # This route handles user creation, modification, deletion, login, and logout
 users = Blueprint("users", __name__)
+
+
+@users.route("", methods=["GET"])
+@login_required(role=Role.MODERATOR)
+@validate
+def find_users(user: User):
+    try:
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page-size", 25))
+        values = current_app.user_service.find_users(request.args.get("q", ""), page, page_size)
+    except ValueError as exc:
+        return {"error": str(exc)}, 422
+    return [item.to_dict() for item in values], 200
+
+
+@users.route("/<int:id>", methods=["PATCH"])
+@login_required(role=Role.MODERATOR)
+@validate
+def moderate_user(user: User, id: int):
+    data = request.get_json()
+    rank = user.role.value if isinstance(user.role, Role) else user.role
+    if "role" in data and rank < Role.ADMIN.value:
+        return {"error": "Insufficient permissions"}, 401
+    try:
+        result = current_app.user_service.moderate_user(id, data)
+    except ValueError as exc:
+        return {"error": str(exc)}, 422
+    if result is None:
+        return {"error": "User not found."}, 404
+    if result is False:
+        return {"error": "User could not be updated."}, 500
+    return result.to_dict(), 200
+
+
+@users.route("/<int:id>", methods=["DELETE"])
+@login_required(role=Role.MODERATOR)
+@validate
+def delete_user_mod(user: User, id: int):
+    result = current_app.user_service.delete_user_by_id(id)
+    if result is None:
+        return {"error": "User not found."}, 404
+    if not result:
+        return {"error": "Deletion failed"}, 500
+    return {"message": "Deletion was successful"}, 200
 
 
 # Creates a user and adds it to the database
@@ -28,13 +72,7 @@ def create_user():
 @validate
 @login_required()
 def info(user: User):
-    return {
-        "id": user.id,
-        "email": user.email,
-        "mature": user.mature,
-        "email_preference": user.email_preference,
-        "timezone": user.timezone,
-    }, 200
+    return user.to_dict(), 200
 
 
 @users.route("/me", methods=["PATCH"])
@@ -58,13 +96,7 @@ def update(user: User):
         email_preference if email_preference is not None else user.email_preference
     )
     current_app.user_service.update_user(user)
-    return {
-        "id": user.id,
-        "email": user.email,
-        "mature": user.mature,
-        "email_preference": user.email_preference,
-        "timezone": user.timezone,
-    }, 200
+    return user.to_dict(), 200
 
 
 @users.route("/me", methods=["DELETE"])

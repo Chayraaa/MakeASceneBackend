@@ -52,6 +52,13 @@ class SqlUserRepo:
         self.session.commit()
         return True
 
+    def find_users(self, email_query: str, page: int = 1, page_size: int = 25) -> list[User]:
+        users = (self.session.query(UserModel)
+                 .filter(UserModel.email.icontains(email_query, autoescape=True))
+                 .order_by(UserModel.id)
+                 .offset((page - 1) * page_size).limit(page_size).all())
+        return [self.get_user(user.id) for user in users]
+
     def update_user(self, user: User) -> bool:
         db_user = self.session.get(UserModel, user.id)
         db_user.password = user.hashed_password

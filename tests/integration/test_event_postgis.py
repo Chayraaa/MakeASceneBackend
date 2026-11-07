@@ -22,6 +22,7 @@ from app.database_models.site_account.site_account_model import SiteAccountModel
 from app.database_models.tags.tag_model import TagModel
 from app.database_models.user_model import UserModel
 from app.database_models.subscriptions.event_subscription_model import EventSubscriptionModel
+from app.database_models.subscriptions.location_subscription_model import LocationSubscriptionModel
 from app.database_models.subscriptions.site_account_subscription_model import SiteAccountSubscriptionModel
 from app.domain_models.Location import Location
 from app.domain_models.events.event import Event
@@ -59,6 +60,7 @@ def postgis_session():
                     UserModel.__table__, SiteAccountModel.__table__, TagModel.__table__,
                     LocationModel.__table__, EventModel.__table__, event_tags, event_collaborators,
                     EventSubscriptionModel.__table__, SiteAccountSubscriptionModel.__table__,
+                    LocationSubscriptionModel.__table__,
                 ])
                 with Session(connection) as session:
                     yield session

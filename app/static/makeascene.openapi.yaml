@@ -2121,7 +2121,7 @@ paths:
     get:
       summary: Query site accounts
       deprecated: false
-      description: Queries all existing site accounts.
+      description: Queries site accounts the caller can view. An omitted, empty, or whitespace-only query lists all accessible site accounts, with pagination.
       operationId: querySiteAccount
       tags:
         - Site Account
@@ -2129,8 +2129,9 @@ paths:
       parameters:
         - name: q
           in: query
-          description: ''
-          required: true
+          description: Search text. Leave empty to list all accessible site accounts.
+          required: false
+          allowEmptyValue: true
           schema:
             type: string
         - name: page

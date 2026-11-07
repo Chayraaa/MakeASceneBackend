@@ -151,9 +151,10 @@ class SiteAccountService:
     def can_view(self, user: User | None, site_account: SiteAccount) -> bool:
         return site_account.visible or (user is not None and self.has_authority(user, site_account))
 
-    def query_site_accounts(self, query: str, page: int = 1, user: User | None = None):
+    def query_site_accounts(self, query: str | None, page: int = 1, user: User | None = None):
         if page < 1:
             raise ValueError("page must be positive")
+        query = query if query and query.strip() else "*"
         # Search pages contain public and hidden accounts. Apply permissions
         # before slicing so the caller receives pages of accessible results.
         with site_account_metrics.site_account_search_duration.time():

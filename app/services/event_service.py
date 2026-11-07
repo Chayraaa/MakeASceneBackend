@@ -110,8 +110,9 @@ class EventService:
             raise ValueError("page and page_size must be positive")
         query = query or EventQuery()
         query.validate()
-        if query.place_id is not None and self.location_service.get_location_data(query.place_id) is None:
-            raise ValueError("Query location could not be resolved")
+        for place_id in dict.fromkeys(query.place_ids):
+            if self.location_service.get_location_data(place_id) is None:
+                raise ValueError("Query location could not be resolved")
         if user is None:
             return self.event_repo.query_events(query, page, page_size)
         return self.event_repo.query_events(query, page, page_size, user=user)

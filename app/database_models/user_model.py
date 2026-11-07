@@ -36,6 +36,9 @@ class UserModel(db.Model):
     messages = relationship(
         "MessageModel", back_populates="user", cascade="all, delete-orphan"
     )
+    location_subscriptions = relationship(
+        "LocationSubscriptionModel", back_populates="user", cascade="all, delete-orphan"
+    )
     # Subscriptions
     event_subscriptions = relationship(
         "EventSubscriptionModel", back_populates="user", cascade="all, delete-orphan"

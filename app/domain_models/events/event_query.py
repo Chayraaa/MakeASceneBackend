@@ -11,7 +11,7 @@ class EventQuery:
     """Included tags use OR and rank by match count; other filters are mandatory.
 
     Dates select overlapping events. Radius is in metres; coordinates are (lon, lat).
-    A place_id uses the cached place geometry as a fence. GeoJSON fences must be
+    Place IDs use cached place geometries as fences, matching any supplied place. GeoJSON fences must be
     Polygon/MultiPolygon geometries in EPSG:4326. Access requires every supplied label.
     include_partial additionally admits events matching none of the included tags.
     Equally strong matches favor the last selected tag, then date/time.
@@ -23,7 +23,7 @@ class EventQuery:
     name: str | None = None
     from_: datetime | None = None
     till: datetime | None = None
-    place_id: str | None = None
+    place_ids: list[str] = field(default_factory=list)
     geofence: dict[str, Any] | None = None
     longitude: float | None = None
     latitude: float | None = None

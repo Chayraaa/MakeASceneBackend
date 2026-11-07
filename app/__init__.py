@@ -1,3 +1,4 @@
+from app.database_models.subscriptions.location_subscription_model import LocationSubscriptionModel
 import logging
 import os
 from enum import Enum
@@ -151,7 +152,8 @@ def setup_services(app: Flask):
     app.site_account_service = SiteAccountService(unit_of_work.site_account_repo,
                                                   unit_of_work.user_repo, app.image_service, unit_of_work.site_account_search_engine, unit_of_work.site_account_application_repo,
                                                   subscription_repo=unit_of_work.site_account_subscription_repo, message_service=app.message_service)
-    app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo, unit_of_work.location_storage)
+    app.location_service = LocationService(unit_of_work.location_search_engine, unit_of_work.location_api_repo, unit_of_work.location_storage,
+                                           subscription_repo=unit_of_work.location_subscription_repo)
     app.event_service = EventService(unit_of_work.event_repo, app.location_service, app.image_service,
                                      subscription_repo=unit_of_work.event_subscription_repo, message_service=app.message_service,
                                      user_repo=unit_of_work.user_repo, site_account_service=app.site_account_service)

@@ -146,7 +146,7 @@ def test_event_query_maps_spec_parameters(api):
         ("included_tags", "1"), ("included_tags", "2"), ("excluded_tags", "3"),
         ("access", "wheelchair"), ("name", "Concert"),
         ("from", "2026-10-22T18:00:00Z"), ("till", "2026-10-22T22:00:00Z"),
-        ("place-id", "berlin"), ("long", "13.4"), ("lat", "52.5"), ("radius", "1000"),
+        ("place-id", "berlin"), ("place-id", "paris"), ("long", "13.4"), ("lat", "52.5"), ("radius", "1000"),
         ("include-no-tag-matches", "true"), ("organisers", str(api.owner.id)), ("page", "2"), ("size", "5"),
     ])
     assert response.status_code == 200, response.get_json()
@@ -154,7 +154,7 @@ def test_event_query_maps_spec_parameters(api):
     assert query.included_tags == [1, 2] and query.excluded_tags == [3]
     assert query.organizer_ids == [api.owner.id]
     assert query.access == ["wheelchair"] and query.name == "Concert"
-    assert query.place_id == "berlin" and query.longitude == 13.4 and query.latitude == 52.5
+    assert query.place_ids == ["berlin", "paris"] and query.longitude == 13.4 and query.latitude == 52.5
     assert query.radius_m == 1000 and query.include_partial
     assert query.from_.tzinfo is not None
     assert api.service.query_events.call_args.kwargs == {"page": 2, "page_size": 5, "user": api.actors["owner"]}

@@ -215,12 +215,15 @@ def test_postgres_query_keeps_access_and_spatial_filters_with_fallback(event_ses
     monkeypatch.setattr(Query, "all", capture)
     query = EventQuery(
         included_tags=[1], excluded_tags=[2], access=["wheelchair", "adults"], include_partial=True,
-        place_id="city", longitude=13.4, latitude=52.5, radius_m=1000,
+        place_ids=["city", "other-city"], longitude=13.4, latitude=52.5, radius_m=1000,
         geofence={"type": "Polygon", "coordinates": [[[13, 52], [14, 52], [14, 53], [13, 52]]]},
     )
     SqlEventRepo(event_session).query_events(query, 2, 10)
     sql = str(statements[0])
     assert "@>" in sql
+    assert ["city", "other-city"] in statements[0].params.values()
+    assert "locations_1.place_id IN" in sql
+    assert "ST_Intersects(locations.geometry, locations_1.geometry)" in sql
     assert "ST_Intersects" in sql
     assert "ST_DWithin" in sql
     assert "geography" in sql.lower()

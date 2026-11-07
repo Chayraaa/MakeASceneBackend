@@ -1,5 +1,5 @@
 from geoalchemy2 import Geometry
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
 
@@ -15,4 +15,7 @@ class LocationModel(db.Model):
             srid=4326,
         ),
         nullable=True,
+    )
+    subscriptions = relationship(
+        "LocationSubscriptionModel", back_populates="location", cascade="all, delete-orphan"
     )

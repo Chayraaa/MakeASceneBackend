@@ -35,3 +35,20 @@ def test_subscription_visibility_timezone_migration_round_trip():
         assert [column["name"] for column in inspector.get_columns("users")] == ["id"]
         assert [column["name"] for column in inspector.get_columns("events")] == ["id"]
     engine.dispose()
+
+
+def test_location_subscription_migration_round_trip():
+    engine = create_engine("sqlite://")
+    with engine.begin() as connection:
+        for table in ("users", "locations"):
+            connection.execute(text(f"CREATE TABLE {table} (id INTEGER PRIMARY KEY)"))
+        module = runpy.run_path("migrations/versions/f3a71c8d902b_add_location_subscriptions.py")
+        module["upgrade"].__globals__["op"] = Operations(MigrationContext.configure(connection))
+        module["upgrade"]()
+        inspector = inspect(connection)
+        assert inspector.get_unique_constraints("location_subscriptions")
+        assert len(inspector.get_foreign_keys("location_subscriptions")) == 2
+        assert len(inspector.get_indexes("location_subscriptions")) == 2
+        module["downgrade"]()
+        assert "location_subscriptions" not in inspect(connection).get_table_names()
+    engine.dispose()

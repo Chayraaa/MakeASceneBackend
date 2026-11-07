@@ -339,3 +339,33 @@ def get_collaboration_events(user: User):
     events = current_app.event_service.get_collaboration_events(user, page, page_size)
     accounts, places = {}, {}
     return [_response(event, accounts, places) for event in events], 200
+
+
+@users.route("/me/locations", methods=["GET"])
+@login_required()
+@validate
+def get_saved_locations(user: User):
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 25, type=int)
+    if page < 1 or page_size < 1:
+        return {"error": "page and page_size must be positive."}, 422
+    locations = current_app.location_service.get_saved_locations(user, page, page_size)
+    if locations is None:
+        return {"error": "Failed to retrieve locations."}, 500
+    return {"locations": locations}, 200
+
+
+@users.route("/me/locations/<string:id>", methods=["POST"])
+@login_required()
+@validate
+def subscribe_to_location(user: User, id: str):
+    result = current_app.location_service.subscribe_to_location(user, id)
+    return _subscription_write_response(result, "Location saved.")
+
+
+@users.route("/me/locations/<string:id>", methods=["DELETE"])
+@login_required()
+@validate
+def unsubscribe_from_location(user: User, id: str):
+    result = current_app.location_service.unsubscribe_from_location(user, id)
+    return _subscription_write_response(result, "Location removed.")

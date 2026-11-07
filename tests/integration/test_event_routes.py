@@ -326,12 +326,15 @@ def test_hidden_detail_permissions(api, actor, allowed, kind):
 
 @pytest.mark.parametrize("actor,allowed", [(None, False), ("stranger", False), ("owner", True),
                                          ("moderator", True), ("admin", True)])
-def test_site_search_visibility(api, actor, allowed):
+@pytest.mark.parametrize("query", ["?q=Owner", "", "?q=", "?q=%20%20"])
+def test_site_search_visibility(api, actor, allowed, query):
     api.app.site_account_service.search_engine.search_by_semantic.return_value = [SimpleNamespace(id=api.owner.id)]
     headers = authorization(api, actor) if actor else {}
-    response = api.client.get("/v1/site_accounts?q=Owner", headers=headers)
+    response = api.client.get("/v1/site_accounts" + query, headers=headers)
     assert response.status_code == 200
     assert [account["id"] for account in response.json] == ([api.owner.id] if allowed else [])
+    api.app.site_account_service.search_engine.search_by_semantic.assert_called_once_with(
+        "Owner" if query == "?q=Owner" else "*", 1)
 
 
 @pytest.mark.parametrize("zone", ["Europe/Berlin", "America/New_York", "UTC"])

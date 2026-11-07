@@ -1,3 +1,5 @@
+from app.repositories.interfaces.storage.subscriptions.location_subscription_repo_protocol import LocationSubscriptionRepoProtocol
+from app.repositories.storage.subscriptions.sql_location_subscription_repo import SqlLocationSubscriptionRepo
 from app.repositories.interfaces.storage.subscriptions.site_account_subscription_repo_protocol import SiteAccountSubscriptionRepoProtocol
 from app.repositories.storage.subscriptions.sql_site_account_subscription_repo import SqlSiteAccountSubscriptionRepo
 from app.repositories.interfaces.storage.subscriptions.event_subscription_repo_protocol import EventSubscriptionRepoProtocol
@@ -49,6 +51,7 @@ from app.repositories.interfaces.storage.messages.message_storage_protocol impor
 class DeployUnitOfWork:
     def __init__(self):
         self.site_account_subscription_repo: SiteAccountSubscriptionRepoProtocol = SqlSiteAccountSubscriptionRepo(db.session)
+        self.location_subscription_repo: LocationSubscriptionRepoProtocol = SqlLocationSubscriptionRepo(db.session)
         self.event_subscription_repo: EventSubscriptionRepoProtocol = SqlEventSubscriptionRepo(db.session)
         self.message_repo: MessageStorageProtocol = SqlMessageRepo(db.session)
         self.event_repo: EventRepoProtocol = SqlEventRepo(db.session)

@@ -11,6 +11,7 @@ tags:
   - name: Site Account
   - name: Message
   - name: Event
+  - name: Moderation
   - name: Authentication
   - name: OAuth
   - name: Health
@@ -246,49 +247,36 @@ paths:
           headers: {}
       security:
         - BearerAuth: []
-  /users/me/locations:
-    get:
-      summary: Get all subscribed locations
+  /users/me/locations/{id}:
+    delete:
+      summary: Unsubscribe location
       deprecated: false
-      description: Get the locations you saved.
-      operationId: getLocations
+      description: Remove a tag if it exists.
+      operationId: unsubscribeLocation
       tags:
         - Users
         - Location
       parameters:
-        - name: page
-          in: query
+        - name: id
+          in: path
           description: ''
-          required: false
-          example: 1
+          required: true
           schema:
-            type: integer
-        - name: page_size
-          in: query
-          description: ''
-          required: false
-          example: 25
-          schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: ''
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  locations:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/LocationObject'
-                    description: Saved locations
-                required:
-                  - locations
+                $ref: '#/components/schemas/TagResponse'
           headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
           description: Validation error – one or more fields failed validation
@@ -297,7 +285,6 @@ paths:
           description: ''
       security:
         - BearerAuth: []
-  /users/me/locations/{id}:
     post:
       summary: Subscribe location
       deprecated: false
@@ -335,35 +322,49 @@ paths:
           description: ''
       security:
         - BearerAuth: []
-    delete:
-      summary: Unsubscribe location
+  /users/me/locations:
+    get:
+      summary: Get all subscribed locations
       deprecated: false
-      description: Remove a saved location if it exists.
-      operationId: unsubscribeLocation
+      description: Get the locations you saved.
+      operationId: getLocations
       tags:
         - Users
         - Location
       parameters:
-        - name: id
-          in: path
+        - name: page
+          in: query
           description: ''
-          required: true
+          required: false
+          example: 1
           schema:
-            type: string
+            type: integer
+        - name: page_size
+          in: query
+          description: ''
+          required: false
+          example: 25
+          schema:
+            type: integer
       responses:
         '200':
           description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TagResponse'
+                type: object
+                properties:
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LocationQueryAnswer'
+                    description: tag
+                required:
+                  - locations
           headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Authentication failed
-        '404':
-          $ref: '#/components/responses/NotFound'
-          description: ''
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
           description: Validation error – one or more fields failed validation
@@ -1170,6 +1171,61 @@ paths:
       security:
         - BearerAuth: []
   /users:
+    get:
+      summary: Find users by email
+      deprecated: false
+      description: Get users based on email query - Mod only
+      operationId: getUsers
+      tags:
+        - Users
+        - Moderation
+      parameters:
+        - name: q
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number (starting at 1).
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page-size
+          in: query
+          description: Number of users per page.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 25
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfoResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
     post:
       summary: Create user
       deprecated: false
@@ -1232,6 +1288,94 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: ''
       security: []
+  /users/{id}:
+    patch:
+      summary: Change user data
+      deprecated: false
+      description: Changes details about a user if a mod needs it - Mod only
+      operationId: changeUser
+      tags:
+        - Users
+        - Moderation
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email-accepted:
+                  type: boolean
+                  default: true
+                role:
+                  type: integer
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
+    delete:
+      summary: Delete User
+      deprecated: false
+      description: Deletes a user if a mod requests it - Mod only
+      operationId: deleteUserMod
+      tags:
+        - Users
+        - Moderation
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+          headers: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Authentication failed
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: ''
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+          description: Validation error – one or more fields failed validation
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: ''
+      security:
+        - BearerAuth: []
   /auth/email/confirm:
     get:
       summary: Confirm Email
@@ -2663,11 +2807,14 @@ components:
         email_preference:
           type: boolean
           default: true
+        role:
+          type: integer
       required:
         - mature
         - email_preference
         - email
         - id
+        - role
     PatchUserRequest:
       type: object
       properties:

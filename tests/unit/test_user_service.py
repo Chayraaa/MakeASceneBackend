@@ -1,6 +1,23 @@
 from unittest.mock import MagicMock, patch, call
 
 from app.services.user_service import UserService
+import pytest
+
+
+def test_find_users_passes_pagination_to_repository():
+    repo = MagicMock()
+    service = UserService(repo, MagicMock(), MagicMock())
+    assert service.find_users('example', 2, 5) == repo.find_users.return_value
+    repo.find_users.assert_called_once_with('example', 2, 5)
+
+
+@pytest.mark.parametrize('page,page_size', [(0, 25), (-1, 25), (1, 0), (1, -1)])
+def test_find_users_rejects_nonpositive_pagination(page, page_size):
+    repo = MagicMock()
+    service = UserService(repo, MagicMock(), MagicMock())
+    with pytest.raises(ValueError):
+        service.find_users('', page, page_size)
+    repo.find_users.assert_not_called()
 
 ## TEST CASES CURTESY OF CLAUDE
 

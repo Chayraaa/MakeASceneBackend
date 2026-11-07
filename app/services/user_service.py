@@ -1,5 +1,5 @@
 from app.email_templates import render_email_template
-from app.domain_models.user import User
+from app.domain_models.user import Role, User
 from app.repositories.interfaces.external.email_protocol import EmailProtocol
 from app.repositories.interfaces.storage.auth.confirm_token_repo_protocol import ConfirmTokenRepoProtocol
 from app.repositories.interfaces.storage.user_repo_protocol import UserRepoProtocol
@@ -36,6 +36,28 @@ class UserService:
 
     def get_user_by_email(self, email: str) -> User | None:
         return self.user_repo.get_user_by_email(email)
+
+    def find_users(self, email_query: str, page: int = 1, page_size: int = 25) -> list[User]:
+        if page < 1 or page_size < 1:
+            raise ValueError("page and page-size must be positive.")
+        return self.user_repo.find_users(email_query, page, page_size)
+
+    def moderate_user(self, user_id: int, changes: dict) -> User | bool | None:
+        role = changes.get("role")
+        if "role" in changes and (type(role) is not int or role not in [r.value for r in Role]):
+            raise ValueError("Invalid role.")
+        user = self.get_user(user_id)
+        if user is None:
+            return None
+        if "email-accepted" in changes:
+            user.confirmed = changes["email-accepted"]
+        if "role" in changes:
+            user.role = role
+        return user if self.update_user(user) else False
+
+    def delete_user_by_id(self, user_id: int) -> bool | None:
+        user = self.get_user(user_id)
+        return None if user is None else self.delete_user(user)
 
     def create_user(self, email: str, password: str) -> bool:
         hashed_password = PasswordService.hash_password(password)

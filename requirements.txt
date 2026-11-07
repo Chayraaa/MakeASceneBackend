@@ -12,6 +12,7 @@ pyyaml
 pytest
 pytest-mock
 pytest-cov
+pytest-xdist
 python-dotenv
 argon2-cffi
 resend

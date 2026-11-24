@@ -13,6 +13,12 @@ class SqlTagRepo:
         self.session.commit()
         return True
 
+    def get_all_tags(self) -> list[Tag]:
+        return [
+            Tag(id=tag.id, name=tag.name, parent=tag.parent)
+            for tag in self.session.query(TagModel).order_by(TagModel.id)
+        ]
+
     def get_tag_by_name(self, name: str) -> Tag | None:
         db_tag = self.session.query(TagModel).filter_by(name=name).first()
         if not db_tag:

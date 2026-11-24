@@ -6,12 +6,12 @@ tags = Blueprint("tags", __name__)
 
 
 @tags.route("", methods=["GET"])
-@validate
+@validate(empty_query_as_missing=("query",))
 def get_tags():
     query = request.args.get("query")
     autocomplete = request.args.get("autocomplete")
     page = (request.args.get("page") or 0)
-    if autocomplete and autocomplete.lower() not in ('false', '0', 'no'):
+    if query and query.strip() and autocomplete and autocomplete.lower() not in ('false', '0', 'no'):
         res = current_app.tag_service.autocomplete(query, page)
     else:
         res = current_app.tag_service.query_tags(query)

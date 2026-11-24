@@ -12,7 +12,7 @@ os.makedirs(_multiproc_dir, exist_ok=True)
 os.environ["PROMETHEUS_MULTIPROC_DIR"] = _multiproc_dir
 from app.services.location_service import LocationService
 from app.services.message_service import MessageService
-from functools import wraps
+from functools import partial, wraps
 from time import sleep
 
 import yaml
@@ -224,13 +224,22 @@ def login_required(role: Role = Role.USER, *, optional: bool = False):
 
 # Validation decorator
 # AI used for beautifying output when validation failed
-def validate(f):
+def validate(f=None, *, empty_query_as_missing: tuple[str, ...] = ()):
+    if f is None:
+        return partial(validate, empty_query_as_missing=empty_query_as_missing)
+
     @wraps(f)
     def decorated(*args, **kwargs):
         openapi = current_app.openapi_spec
 
         try:
             openapi_request = FlaskOpenAPIRequest(request)
+            if empty_query_as_missing:
+                query = openapi_request.parameters.query.copy()
+                for name in empty_query_as_missing:
+                    if query.getlist(name) == [""]:
+                        query.pop(name)
+                openapi_request.parameters.query = query
             openapi.validate_request(openapi_request)
         except InvalidRequestBody as e:
             if isinstance(e.__cause__, InvalidSchemaValue):

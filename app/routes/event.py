@@ -25,7 +25,8 @@ def _date(value: str) -> datetime:
 
 def _changes(data: dict) -> dict:
     fields = {}
-    for key in ("name", "description", "till", "layout", "data", "access", "repeating", "collaborators", "visible"):
+    for key in ("name", "description", "till", "layout", "data", "access", "repeating", "collaborators", "visible",
+                "colors"):
         if key in data:
             fields[key] = data[key]
     for external, internal in (("from", "from_"), ("place-id", "place_id"),

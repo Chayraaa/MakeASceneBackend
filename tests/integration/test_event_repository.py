@@ -52,6 +52,7 @@ def event_value():
         tags=[1, 1], place_id="test-place", layout=1,
         data=[{"text": "Original"}], owner_id=1, access=["public"],
         detail_data=[{"items": ["first"]}], collaborators=[2, 2], repeating="P1W",
+        colors=["#AbCdEf", "#F09"],
     )
 
 
@@ -67,10 +68,12 @@ def test_event_crud_and_json_updates(event_session, event_value):
     assert loaded.data == event_value.data
     assert loaded.detail_data == event_value.detail_data
     assert loaded.access == ["public"]
+    assert loaded.colors == ["#AbCdEf", "#F09"]
 
     loaded.data[0]["text"] = "Updated"
     loaded.detail_data[0]["items"].append("second")
     loaded.access.append("members")
+    loaded.colors.append("#112233AA")
     loaded.tags = [2]
     loaded.collaborators = []
     loaded.owner_id = 2
@@ -81,6 +84,7 @@ def test_event_crud_and_json_updates(event_session, event_value):
     assert updated.data == [{"text": "Updated"}]
     assert updated.detail_data == [{"items": ["first", "second"]}]
     assert updated.access == ["public", "members"]
+    assert updated.colors == ["#AbCdEf", "#F09", "#112233AA"]
     assert updated.tags == [2]
     assert updated.collaborators == []
     assert updated.owner_id == 2

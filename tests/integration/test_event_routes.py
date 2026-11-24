@@ -47,6 +47,7 @@ def api(app, session):
         till=start + timedelta(hours=2), tags=[tag.id], place_id="venue", layout=1,
         data=[{"image": "https://example.com/event.png"}], detail_data=[],
         owner_id=owner.id, collaborators=[collaborator.id], access=["wheelchair"],
+        colors=["#12Ab34", "#F09"],
     )
     app.event_service = Mock(spec=EventService)
     app.event_service.get_event_by_id.side_effect = lambda event_id: value if event_id == value.id else None
@@ -97,38 +98,61 @@ def test_create_event_permission(api, actor, expected):
         assert created.owner_id == api.owner.id
         assert created.collaborators == [api.collaborator.id]
         assert created.from_ == api.event.from_
+        assert created.colors == api.event.colors
 
 
 @pytest.mark.parametrize("method", ["patch", "delete"])
 @pytest.mark.parametrize("actor, expected", [("owner", 200), ("stranger", 401), ("collaborator", 401),
                                             ("moderator", 200), ("admin", 200)])
 def test_event_write_permission(api, method, actor, expected):
-    kwargs = {"json": {"name": "Changed"}} if method == "patch" else {}
+    kwargs = {"json": {"name": "Changed", "colors": ["#aBcDeF"]}} if method == "patch" else {}
     response = getattr(api.client, method)(
         "/v1/event/123", headers=authorization(api, actor), **kwargs,
     )
     assert response.status_code == expected, response.get_json()
     write = api.service.update_event if method == "patch" else api.service.remove_event
     assert write.called == (expected == 200)
+    if method == "patch" and expected == 200:
+        assert write.call_args.args[0].colors == ["#aBcDeF"]
 
 
 @pytest.mark.parametrize("actor, expected", [("owner", 401), ("stranger", 401), ("moderator", 200), ("admin", 200)])
 def test_event_transfer_requires_access_to_both_sites(api, actor, expected):
     response = api.client.patch(
-        "/v1/event/123", json={"owner-id": api.foreign.id}, headers=authorization(api, actor),
+        "/v1/event/123", json={"owner-id": api.foreign.id, "colors": api.event.colors},
+        headers=authorization(api, actor),
     )
     assert response.status_code == expected
     assert api.service.update_event.called == (expected == 200)
+
+
+def test_event_patch_without_colors_preserves_existing_colors(api):
+    response = api.client.patch("/v1/event/123", json={"name": "Changed"}, headers=authorization(api))
+    assert response.status_code == 200, response.json
+    updated = api.service.update_event.call_args.args[0]
+    assert updated.name == "Changed"
+    assert updated.colors == api.event.colors
 
 
 def test_event_public_read_matches_spec(api):
     response = api.client.get("/v1/event/123")
     assert response.status_code == 200, response.get_json()
     assert_schema(api, response, "EventObject")
+    assert response.json["colors"] == api.event.colors
     assert response.json["owner-name"] == api.owner.name
     assert response.json["place-data"] == {"name": "Concert hall"}
     assert response.json["collaborators"][0]["collaborator-name"] == api.collaborator.name
     assert api.client.get("/v1/event/999").status_code == 404
+
+
+@pytest.mark.parametrize("method, path", [("post", "/v1/event"), ("patch", "/v1/event/123")])
+@pytest.mark.parametrize("colors", [["3366CC"], ["#GG0000"], ["#12345"], ["#3366CC\n"], [123], "#3366CC"])
+def test_event_rejects_invalid_colors(api, method, path, colors):
+    payload = {**event_payload(api), "colors": colors}
+    response = getattr(api.client, method)(path, json=payload, headers=authorization(api))
+    assert response.status_code == 422
+    api.service.create_event.assert_not_called()
+    api.service.update_event.assert_not_called()
 
 
 def test_event_query_allows_anonymous_requests(api):
@@ -136,6 +160,7 @@ def test_event_query_allows_anonymous_requests(api):
 
     assert response.status_code == 200
     assert len(response.get_json()) == 1
+    assert response.json[0]["colors"] == api.event.colors
     assert api.service.query_events.call_args.kwargs == {
         "page": 1, "page_size": 25, "user": None,
     }
@@ -184,7 +209,7 @@ def test_event_request_validation(api, changes):
 
 def test_missing_event_and_site_references(api):
     for method in ("patch", "delete"):
-        response = getattr(api.client, method)("/v1/event/999", json={}, headers=authorization(api))
+        response = getattr(api.client, method)("/v1/event/999", json={"colors": []}, headers=authorization(api))
         assert response.status_code == 404
     for field, value in [("owner-id", 999), ("tags", [999]), ("collaborators", [999])]:
         response = api.client.post(
@@ -251,7 +276,7 @@ def test_site_account_creation_is_moderator_only(api):
 @pytest.mark.parametrize("method", ["post", "patch"])
 def test_event_tag_names_are_created_indexed_and_reused(api, method):
     existing_id = api.event.tags[0]
-    payload = {"tags": [existing_id, "New tag", "123", "New tag", "Music"]}
+    payload = {"tags": [existing_id, "New tag", "123", "New tag", "Music"], "colors": api.event.colors}
     if method == "post":
         payload = {**event_payload(api), **payload}
     path = "/v1/event" if method == "post" else "/v1/event/123"
@@ -326,7 +351,7 @@ def test_hidden_detail_permissions(api, actor, allowed, kind):
 
 @pytest.mark.parametrize("actor,allowed", [(None, False), ("stranger", False), ("owner", True),
                                          ("moderator", True), ("admin", True)])
-@pytest.mark.parametrize("query", ["?q=Owner", "", "?q=", "?q=%20%20"])
+@pytest.mark.parametrize("query", ["?q=Owner", "", "?q=%20%20"])
 def test_site_search_visibility(api, actor, allowed, query):
     api.app.site_account_service.search_engine.search_by_semantic.return_value = [SimpleNamespace(id=api.owner.id)]
     headers = authorization(api, actor) if actor else {}
@@ -335,6 +360,12 @@ def test_site_search_visibility(api, actor, allowed, query):
     assert [account["id"] for account in response.json] == ([api.owner.id] if allowed else [])
     api.app.site_account_service.search_engine.search_by_semantic.assert_called_once_with(
         "Owner" if query == "?q=Owner" else "*", 1)
+
+
+def test_site_search_rejects_empty_query(api):
+    response = api.client.get("/v1/site_accounts?q=")
+    assert response.status_code == 422
+    api.app.site_account_service.search_engine.search_by_semantic.assert_not_called()
 
 
 @pytest.mark.parametrize("zone", ["Europe/Berlin", "America/New_York", "UTC"])

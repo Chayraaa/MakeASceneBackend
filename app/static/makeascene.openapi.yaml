@@ -1188,20 +1188,16 @@ paths:
             type: string
         - name: page
           in: query
-          description: Page number (starting at 1).
+          description: ''
           required: false
           schema:
             type: integer
-            minimum: 1
-            default: 1
         - name: page-size
           in: query
-          description: Number of users per page.
+          description: ''
           required: false
           schema:
             type: integer
-            minimum: 1
-            default: 25
       responses:
         '200':
           description: ''
@@ -2121,7 +2117,7 @@ paths:
     get:
       summary: Query site accounts
       deprecated: false
-      description: Queries site accounts the caller can view. An omitted, empty, or whitespace-only query lists all accessible site accounts, with pagination.
+      description: Queries all existing site accounts.
       operationId: querySiteAccount
       tags:
         - Site Account
@@ -2129,9 +2125,8 @@ paths:
       parameters:
         - name: q
           in: query
-          description: Search text. Leave empty to list all accessible site accounts.
+          description: ''
           required: false
-          allowEmptyValue: true
           schema:
             type: string
         - name: page
@@ -3042,6 +3037,7 @@ components:
           type: array
           items:
             type: string
+            pattern: ^#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})(?![\s\S])
         contact:
           type: array
           items:
@@ -3108,6 +3104,7 @@ components:
           type: array
           items:
             type: string
+            pattern: ^#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})(?![\s\S])
         contact:
           type: array
           items:
@@ -3339,6 +3336,11 @@ components:
               - collaborator-picture
         visible:
           type: boolean
+        colors:
+          type: array
+          items:
+            type: string
+            pattern: ^#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})(?![\s\S])
       required:
         - id
         - name
@@ -3356,6 +3358,7 @@ components:
         - data
         - collaborators
         - visible
+        - colors
     EventObjectCreate:
       type: object
       properties:
@@ -3411,6 +3414,11 @@ components:
             type: integer
         visible:
           type: boolean
+        colors:
+          type: array
+          items:
+            type: string
+            pattern: ^#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})(?![\s\S])
       required:
         - name
         - from
@@ -3423,6 +3431,7 @@ components:
         - access
         - data
         - detail-data
+        - colors
     EventObjectUpdate:
       type: object
       properties:
@@ -3474,6 +3483,11 @@ components:
             type: integer
         visible:
           type: boolean
+        colors:
+          type: array
+          items:
+            type: string
+            pattern: ^#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})(?![\s\S])
   responses:
     Unauthorized:
       description: Authentication failed

@@ -305,6 +305,7 @@ def test_http_create_site_publish_query_edit_and_delete_event(postgis_session, a
         "till": "2026-10-22T20:00:00Z", "tags": [tag.id, "New concert tag"], "place-id": "new-venue", "layout": 1,
         "data": [{"image": image}], "detail-data": [], "owner-id": organizer.id,
         "collaborators": [collaborator.id], "access": ["wheelchair"],
+        "colors": ["#AbCdEf", "#F09"],
     }
     response = client.post("/v1/event", json=payload, headers=owner_auth)
     assert response.status_code == 201, response.json
@@ -338,10 +339,15 @@ def test_http_create_site_publish_query_edit_and_delete_event(postgis_session, a
     assert result["collaborators"][0]["collaborator-name"] == "Collaborator"
     assert result["place-data"]["name"] == "Venue"
     assert result["data"][0]["image"].startswith("https://test.example/v1/image/events/")
+    assert result["colors"] == payload["colors"]
     event_id = result["id"]
-    response = client.patch(f"/v1/event/{event_id}", headers=owner_auth, json={"name": "Updated concert", "data": []})
+    response = client.patch(f"/v1/event/{event_id}", headers=owner_auth, json={
+        "name": "Updated concert", "data": [], "colors": ["#12aBcD"],
+    })
     assert response.status_code == 200, response.json
-    assert client.get(f"/v1/event/{event_id}").json["name"] == "Updated concert"
+    updated = client.get(f"/v1/event/{event_id}").json
+    assert updated["name"] == "Updated concert"
+    assert updated["colors"] == ["#12aBcD"]
     assert client.delete(f"/v1/event/{event_id}", headers=owner_auth).status_code == 200
     assert client.get(f"/v1/event/{event_id}").status_code == 404
     api.get_location_details.assert_called_once_with("new-venue")

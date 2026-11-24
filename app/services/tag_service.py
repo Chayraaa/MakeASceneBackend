@@ -30,10 +30,11 @@ class TagService:
         tag_metrics.tag_created.labels(success='true').inc()
         return True
 
-    def query_tags(self, query: str) -> list[Tag]:
+    def query_tags(self, query: str | None) -> list[Tag]:
         with tag_metrics.tag_query_duration.time():
-            tags = self.search_engine_repo.search_with_embedding(query)
-        return tags
+            if not query or not query.strip():
+                return self.tag_repo.get_all_tags()
+            return self.search_engine_repo.search_with_embedding(query)
 
     def resolve_tags(self, values: list[int | str]) -> list[int]:
         """Resolve IDs and create named tags through the usual indexing flow.

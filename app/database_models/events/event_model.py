@@ -41,6 +41,7 @@ class EventModel(db.Model):
     access: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     repeating: Mapped[str | None] = mapped_column(String, nullable=True)
     detail_data: Mapped[list[Any]] = mapped_column(JSON, nullable=False)
+    colors: Mapped[list[str]] = mapped_column(JSON, nullable=False)
 
     owner = relationship("SiteAccountModel", back_populates="owned_events")
     collaborators = relationship(

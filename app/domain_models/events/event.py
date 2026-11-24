@@ -21,6 +21,7 @@ class Event:
     id: int | None = None
     visible: bool = True
     accepted_collaborators: list[int] | None = None
+    colors: list[str] = field(default_factory=list)
 
     def to_dict(self):
         return {
@@ -37,6 +38,7 @@ class Event:
             "owner-id": self.owner_id,
             "access": self.access,
             "detail-data": self.detail_data,
+            "colors": self.colors,
             "repeating": self.repeating,
             "collaborators": self.collaborators,
         }

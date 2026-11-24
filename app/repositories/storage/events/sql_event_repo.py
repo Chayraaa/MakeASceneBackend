@@ -157,6 +157,7 @@ class SqlEventRepo:
         model.access = deepcopy(event.access)
         model.repeating = event.repeating
         model.detail_data = deepcopy(event.detail_data)
+        model.colors = deepcopy(event.colors)
         model.tags = tags
         model.collaborators = collaborators
 
@@ -178,6 +179,7 @@ class SqlEventRepo:
             access=deepcopy(model.access),
             repeating=model.repeating,
             detail_data=deepcopy(model.detail_data),
+            colors=deepcopy(model.colors),
             collaborators=sorted(account.id for account in model.collaborators),
             accepted_collaborators=sorted(account.id for account in model.accepted_collaborators),
         )
